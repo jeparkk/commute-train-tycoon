@@ -13,7 +13,7 @@ void main() {
     expect(find.text('출근열차 키우기'), findsOneWidget);
     expect(find.text('좌석 Lv.1'), findsOneWidget);
     expect(find.text('매점 Lv.1'), findsOneWidget);
-    expect(find.text('장식 Lv.1'), findsOneWidget);
+    expect(find.text('장식 관리'), findsOneWidget);
     expect(find.byIcon(Icons.train_rounded), findsOneWidget);
   });
 
@@ -28,6 +28,31 @@ void main() {
 
     expect(find.text('좌석 Lv.2'), findsOneWidget);
     expect(find.text('좌석 Lv.2 업그레이드!'), findsOneWidget);
+  });
+
+  testWidgets('buys and upgrades a decoration', (tester) async {
+    SharedPreferences.setMockInitialValues({'gold': 700.0});
+
+    await tester.pumpWidget(const CommuteTrainTycoonApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('장식 관리'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('장식 상점'), findsOneWidget);
+    expect(find.text('작은 화분'), findsOneWidget);
+
+    await tester.tap(find.text('140 G'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('작은 화분 Lv.1'), findsOneWidget);
+    expect(find.text('작은 화분 배치 완료!'), findsOneWidget);
+
+    await tester.tap(find.text('227 G'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('작은 화분 Lv.2'), findsOneWidget);
+    expect(find.text('작은 화분 Lv.2 업그레이드!'), findsOneWidget);
   });
 
   testWidgets('move tab grants the warp stub reward', (tester) async {

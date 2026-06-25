@@ -34,8 +34,7 @@ class CommuteTrainTycoonApp extends StatelessWidget {
 
 enum SlotKind {
   seat('좌석', Icons.event_seat_rounded, Color(0xFF4D8CC8)),
-  kiosk('매점', Icons.local_cafe_rounded, Color(0xFFD1843C)),
-  decor('장식', Icons.local_florist_rounded, Color(0xFF7A9D54));
+  kiosk('매점', Icons.local_cafe_rounded, Color(0xFFD1843C));
 
   const SlotKind(this.label, this.icon, this.color);
 
@@ -71,10 +70,132 @@ class UpgradeSlot {
   }
 }
 
+enum DecorationSlotKind {
+  window('창가', Icons.window_rounded),
+  wall('벽면', Icons.image_rounded),
+  floor('바닥', Icons.layers_rounded);
+
+  const DecorationSlotKind(this.label, this.icon);
+
+  final String label;
+  final IconData icon;
+}
+
+class DecorationItem {
+  const DecorationItem({
+    required this.id,
+    required this.slotKind,
+    required this.name,
+    required this.icon,
+    required this.color,
+    required this.baseCost,
+    required this.incomePerLevel,
+    required this.appealPerLevel,
+  });
+
+  final String id;
+  final DecorationSlotKind slotKind;
+  final String name;
+  final IconData icon;
+  final Color color;
+  final int baseCost;
+  final double incomePerLevel;
+  final int appealPerLevel;
+
+  int costForLevel(int currentLevel) {
+    return (baseCost * pow(1.62, currentLevel)).round();
+  }
+}
+
+class PlacedDecoration {
+  const PlacedDecoration({required this.itemId, required this.level});
+
+  final String itemId;
+  final int level;
+
+  PlacedDecoration levelUp() {
+    return PlacedDecoration(itemId: itemId, level: level + 1);
+  }
+}
+
+class DecorationCatalog {
+  static const items = [
+    DecorationItem(
+      id: 'tiny_plant',
+      slotKind: DecorationSlotKind.window,
+      name: '작은 화분',
+      icon: Icons.local_florist_rounded,
+      color: Color(0xFF7A9D54),
+      baseCost: 140,
+      incomePerLevel: 0.3,
+      appealPerLevel: 16,
+    ),
+    DecorationItem(
+      id: 'cat_doll',
+      slotKind: DecorationSlotKind.window,
+      name: '고양이 인형',
+      icon: Icons.pets_rounded,
+      color: Color(0xFFC27B65),
+      baseCost: 360,
+      incomePerLevel: 0.7,
+      appealPerLevel: 34,
+    ),
+    DecorationItem(
+      id: 'cheer_poster',
+      slotKind: DecorationSlotKind.wall,
+      name: '출근 응원 포스터',
+      icon: Icons.campaign_rounded,
+      color: Color(0xFF5F8DC7),
+      baseCost: 180,
+      incomePerLevel: 0.4,
+      appealPerLevel: 20,
+    ),
+    DecorationItem(
+      id: 'route_map',
+      slotKind: DecorationSlotKind.wall,
+      name: '미니 노선도',
+      icon: Icons.map_rounded,
+      color: Color(0xFF7367A8),
+      baseCost: 420,
+      incomePerLevel: 0.8,
+      appealPerLevel: 38,
+    ),
+    DecorationItem(
+      id: 'soft_rug',
+      slotKind: DecorationSlotKind.floor,
+      name: '폭신 러그',
+      icon: Icons.grid_view_rounded,
+      color: Color(0xFFD2A84F),
+      baseCost: 220,
+      incomePerLevel: 0.5,
+      appealPerLevel: 24,
+    ),
+    DecorationItem(
+      id: 'lost_box',
+      slotKind: DecorationSlotKind.floor,
+      name: '분실물 박스',
+      icon: Icons.inventory_2_rounded,
+      color: Color(0xFF4E9B8C),
+      baseCost: 520,
+      incomePerLevel: 1.0,
+      appealPerLevel: 44,
+    ),
+  ];
+
+  static DecorationItem byId(String id) {
+    return items.firstWhere((item) => item.id == id);
+  }
+
+  static List<DecorationItem> forSlot(DecorationSlotKind slotKind) {
+    return items.where((item) => item.slotKind == slotKind).toList();
+  }
+}
+
 class GameState {
   const GameState({
     required this.gold,
     required this.slots,
+    required this.decorations,
     required this.lastSavedAt,
     required this.pendingOfflineGold,
     required this.focusBoostEnabled,
@@ -96,12 +217,11 @@ class GameState {
           baseCost: 120,
           baseIncome: 1.1,
         ),
-        SlotKind.decor: UpgradeSlot(
-          kind: SlotKind.decor,
-          level: 1,
-          baseCost: 160,
-          baseIncome: 1.4,
-        ),
+      },
+      decorations: const {
+        DecorationSlotKind.window: null,
+        DecorationSlotKind.wall: null,
+        DecorationSlotKind.floor: null,
       },
       lastSavedAt: now,
       pendingOfflineGold: 0,
@@ -111,12 +231,24 @@ class GameState {
 
   final double gold;
   final Map<SlotKind, UpgradeSlot> slots;
+  final Map<DecorationSlotKind, PlacedDecoration?> decorations;
   final DateTime lastSavedAt;
   final int pendingOfflineGold;
   final bool focusBoostEnabled;
 
   double get baseIncomePerSecond {
-    return slots.values.fold(0, (sum, slot) => sum + slot.incomePerSecond);
+    final slotIncome = slots.values.fold<double>(
+      0,
+      (sum, slot) => sum + slot.incomePerSecond,
+    );
+    final decorationIncome = decorations.values
+        .whereType<PlacedDecoration>()
+        .fold<double>(0, (sum, placed) {
+          final item = DecorationCatalog.byId(placed.itemId);
+          return sum + item.incomePerLevel * placed.level;
+        });
+
+    return slotIncome + decorationIncome;
   }
 
   double get activeIncomePerSecond {
@@ -124,12 +256,28 @@ class GameState {
   }
 
   int get trainAppeal {
-    return slots.values.fold(0, (sum, slot) => sum + slot.level * 12);
+    final slotAppeal = slots.values.fold<int>(
+      0,
+      (sum, slot) => sum + slot.level * 12,
+    );
+    final decorationAppeal = decorations.values
+        .whereType<PlacedDecoration>()
+        .fold<int>(0, (sum, placed) {
+          final item = DecorationCatalog.byId(placed.itemId);
+          return sum + item.appealPerLevel * placed.level;
+        });
+
+    return slotAppeal + decorationAppeal;
+  }
+
+  int get placedDecorationCount {
+    return decorations.values.whereType<PlacedDecoration>().length;
   }
 
   GameState copyWith({
     double? gold,
     Map<SlotKind, UpgradeSlot>? slots,
+    Map<DecorationSlotKind, PlacedDecoration?>? decorations,
     DateTime? lastSavedAt,
     int? pendingOfflineGold,
     bool? focusBoostEnabled,
@@ -137,6 +285,7 @@ class GameState {
     return GameState(
       gold: gold ?? this.gold,
       slots: slots ?? this.slots,
+      decorations: decorations ?? this.decorations,
       lastSavedAt: lastSavedAt ?? this.lastSavedAt,
       pendingOfflineGold: pendingOfflineGold ?? this.pendingOfflineGold,
       focusBoostEnabled: focusBoostEnabled ?? this.focusBoostEnabled,
@@ -150,6 +299,10 @@ class GameStorage {
   static const _focusBoostKey = 'focusBoostEnabled';
 
   static String _levelKey(SlotKind kind) => '${kind.name}Level';
+  static String _decorationItemKey(DecorationSlotKind kind) =>
+      '${kind.name}DecorationItem';
+  static String _decorationLevelKey(DecorationSlotKind kind) =>
+      '${kind.name}DecorationLevel';
 
   Future<GameState> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -173,12 +326,17 @@ class GameStorage {
           baseIncome: entry.value.baseIncome,
         ),
     };
+    final decorations = {
+      for (final slotKind in DecorationSlotKind.values)
+        slotKind: _loadDecoration(prefs, slotKind),
+    };
 
     final storedGold = prefs.getDouble(_goldKey) ?? base.gold;
     final focusBoostEnabled = prefs.getBool(_focusBoostKey) ?? true;
     final loaded = base.copyWith(
       gold: storedGold,
       slots: slots,
+      decorations: decorations,
       lastSavedAt: lastSavedAt,
       focusBoostEnabled: focusBoostEnabled,
     );
@@ -203,6 +361,37 @@ class GameStorage {
     for (final entry in state.slots.entries) {
       await prefs.setInt(_levelKey(entry.key), entry.value.level);
     }
+
+    for (final entry in state.decorations.entries) {
+      final placed = entry.value;
+      if (placed == null) {
+        await prefs.remove(_decorationItemKey(entry.key));
+        await prefs.remove(_decorationLevelKey(entry.key));
+      } else {
+        await prefs.setString(_decorationItemKey(entry.key), placed.itemId);
+        await prefs.setInt(_decorationLevelKey(entry.key), placed.level);
+      }
+    }
+  }
+
+  PlacedDecoration? _loadDecoration(
+    SharedPreferences prefs,
+    DecorationSlotKind slotKind,
+  ) {
+    final itemId = prefs.getString(_decorationItemKey(slotKind));
+    if (itemId == null || !DecorationCatalog.items.any((i) => i.id == itemId)) {
+      return null;
+    }
+
+    final item = DecorationCatalog.byId(itemId);
+    if (item.slotKind != slotKind) {
+      return null;
+    }
+
+    return PlacedDecoration(
+      itemId: itemId,
+      level: max(1, prefs.getInt(_decorationLevelKey(slotKind)) ?? 1),
+    );
   }
 }
 
@@ -347,6 +536,101 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     _save();
   }
 
+  void _openDecorationPanel() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final current = _state;
+            if (current == null) {
+              return const SizedBox.shrink();
+            }
+
+            return _DecorationPanel(
+              state: current,
+              onBuy: (slotKind, item) {
+                _buyDecoration(slotKind, item);
+                setModalState(() {});
+              },
+              onUpgrade: (slotKind) {
+                _upgradeDecoration(slotKind);
+                setModalState(() {});
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _buyDecoration(DecorationSlotKind slotKind, DecorationItem item) {
+    final current = _state;
+    if (current == null) {
+      return;
+    }
+
+    if (current.decorations[slotKind] != null) {
+      setState(() => _toast = '${slotKind.label}에는 이미 장식이 있습니다');
+      return;
+    }
+
+    if (current.gold < item.baseCost) {
+      setState(() => _toast = '장식을 사기엔 골드가 부족합니다');
+      return;
+    }
+
+    final nextDecorations = Map<DecorationSlotKind, PlacedDecoration?>.of(
+      current.decorations,
+    );
+    nextDecorations[slotKind] = PlacedDecoration(itemId: item.id, level: 1);
+
+    setState(() {
+      _state = current.copyWith(
+        gold: current.gold - item.baseCost,
+        decorations: nextDecorations,
+      );
+      _toast = '${item.name} 배치 완료!';
+    });
+    _save();
+  }
+
+  void _upgradeDecoration(DecorationSlotKind slotKind) {
+    final current = _state;
+    final placed = current?.decorations[slotKind];
+    if (current == null || placed == null) {
+      return;
+    }
+
+    final item = DecorationCatalog.byId(placed.itemId);
+    if (placed.level >= 10) {
+      setState(() => _toast = '${item.name}은 이미 최고 레벨입니다');
+      return;
+    }
+
+    final cost = item.costForLevel(placed.level);
+    if (current.gold < cost) {
+      setState(() => _toast = '장식 업그레이드 골드가 부족합니다');
+      return;
+    }
+
+    final nextDecorations = Map<DecorationSlotKind, PlacedDecoration?>.of(
+      current.decorations,
+    );
+    nextDecorations[slotKind] = placed.levelUp();
+
+    setState(() {
+      _state = current.copyWith(
+        gold: current.gold - cost,
+        decorations: nextDecorations,
+      );
+      _toast = '${item.name} Lv.${placed.level + 1} 업그레이드!';
+    });
+    _save();
+  }
+
   void _toggleFocusBoost(bool enabled) {
     final current = _state;
     if (current == null) {
@@ -394,6 +678,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                     state: state,
                     toast: _toast,
                     onUpgrade: _upgrade,
+                    onOpenDecorations: _openDecorationPanel,
                     onToggleFocusBoost: _toggleFocusBoost,
                     onClaimOfflineGold: _claimOfflineGold,
                     onClaimWarpStubReward: _claimWarpStubReward,
@@ -411,6 +696,7 @@ class _GameContent extends StatelessWidget {
     required this.state,
     required this.toast,
     required this.onUpgrade,
+    required this.onOpenDecorations,
     required this.onToggleFocusBoost,
     required this.onClaimOfflineGold,
     required this.onClaimWarpStubReward,
@@ -420,6 +706,7 @@ class _GameContent extends StatelessWidget {
   final GameState state;
   final String? toast;
   final ValueChanged<SlotKind> onUpgrade;
+  final VoidCallback onOpenDecorations;
   final ValueChanged<bool> onToggleFocusBoost;
   final void Function({required bool doubled}) onClaimOfflineGold;
   final VoidCallback onClaimWarpStubReward;
@@ -450,7 +737,11 @@ class _GameContent extends StatelessWidget {
                       onClaimOfflineGold: onClaimOfflineGold,
                     ),
                   if (state.pendingOfflineGold > 0) const SizedBox(height: 14),
-                  _TrainCabin(state: state, onUpgrade: onUpgrade),
+                  _TrainCabin(
+                    state: state,
+                    onUpgrade: onUpgrade,
+                    onOpenDecorations: onOpenDecorations,
+                  ),
                   const SizedBox(height: 14),
                   _BottomActions(
                     toast: toast,
@@ -671,10 +962,15 @@ class _OfflinePanel extends StatelessWidget {
 }
 
 class _TrainCabin extends StatelessWidget {
-  const _TrainCabin({required this.state, required this.onUpgrade});
+  const _TrainCabin({
+    required this.state,
+    required this.onUpgrade,
+    required this.onOpenDecorations,
+  });
 
   final GameState state;
   final ValueChanged<SlotKind> onUpgrade;
+  final VoidCallback onOpenDecorations;
 
   @override
   Widget build(BuildContext context) {
@@ -750,11 +1046,9 @@ class _TrainCabin extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 10),
-                    _UpgradeTile(
-                      slot: state.slots[SlotKind.decor]!,
-                      gold: state.gold,
-                      wide: true,
-                      onTap: () => onUpgrade(SlotKind.decor),
+                    _DecorationManagerTile(
+                      state: state,
+                      onTap: onOpenDecorations,
                     ),
                   ],
                 ),
@@ -772,13 +1066,11 @@ class _UpgradeTile extends StatelessWidget {
     required this.slot,
     required this.gold,
     required this.onTap,
-    this.wide = false,
   });
 
   final UpgradeSlot slot;
   final double gold;
   final VoidCallback onTap;
-  final bool wide;
 
   @override
   Widget build(BuildContext context) {
@@ -790,7 +1082,7 @@ class _UpgradeTile extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),
         child: Ink(
-          height: wide ? 156 : 164,
+          height: 164,
           decoration: BoxDecoration(
             color: slot.kind.color.withValues(alpha: 0.16),
             borderRadius: BorderRadius.circular(8),
@@ -844,6 +1136,344 @@ class _UpgradeTile extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _DecorationManagerTile extends StatelessWidget {
+  const _DecorationManagerTile({required this.state, required this.onTap});
+
+  final GameState state;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Ink(
+          height: 156,
+          decoration: BoxDecoration(
+            color: const Color(0xFF7A9D54).withValues(alpha: 0.16),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFF7A9D54), width: 2),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF7A9D54),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: const Icon(
+                    Icons.local_florist_rounded,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        '장식 관리',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF273735),
+                          fontSize: 18,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text('배치 ${state.placedDecorationCount}/3'),
+                      const SizedBox(height: 8),
+                      const Text(
+                        '구매, 자동 배치, 업그레이드',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF56704E),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded, size: 30),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DecorationPanel extends StatelessWidget {
+  const _DecorationPanel({
+    required this.state,
+    required this.onBuy,
+    required this.onUpgrade,
+  });
+
+  final GameState state;
+  final void Function(DecorationSlotKind slotKind, DecorationItem item) onBuy;
+  final ValueChanged<DecorationSlotKind> onUpgrade;
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.78,
+      minChildSize: 0.45,
+      maxChildSize: 0.92,
+      builder: (context, scrollController) {
+        return DecoratedBox(
+          decoration: const BoxDecoration(
+            color: Color(0xFFF9F3E9),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+          ),
+          child: ListView(
+            controller: scrollController,
+            padding: const EdgeInsets.fromLTRB(18, 14, 18, 24),
+            children: [
+              Center(
+                child: Container(
+                  width: 48,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD3CABD),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      '장식 상점',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF243B3A),
+                      ),
+                    ),
+                  ),
+                  _CurrencyPill(
+                    icon: Icons.confirmation_number_rounded,
+                    label: '${state.gold.floor()} G',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                '빈 위치에는 장식을 사고, 배치된 장식은 바로 업그레이드합니다.',
+                style: TextStyle(color: Color(0xFF65706C)),
+              ),
+              const SizedBox(height: 16),
+              for (final slotKind in DecorationSlotKind.values) ...[
+                _DecorationSlotSection(
+                  slotKind: slotKind,
+                  state: state,
+                  onBuy: onBuy,
+                  onUpgrade: onUpgrade,
+                ),
+                const SizedBox(height: 12),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _DecorationSlotSection extends StatelessWidget {
+  const _DecorationSlotSection({
+    required this.slotKind,
+    required this.state,
+    required this.onBuy,
+    required this.onUpgrade,
+  });
+
+  final DecorationSlotKind slotKind;
+  final GameState state;
+  final void Function(DecorationSlotKind slotKind, DecorationItem item) onBuy;
+  final ValueChanged<DecorationSlotKind> onUpgrade;
+
+  @override
+  Widget build(BuildContext context) {
+    final placed = state.decorations[slotKind];
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE1D8C8)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(slotKind.icon, color: const Color(0xFF28413D)),
+                const SizedBox(width: 8),
+                Text(
+                  slotKind.label,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 17,
+                    color: Color(0xFF28413D),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            if (placed == null)
+              for (final item in DecorationCatalog.forSlot(slotKind))
+                _DecorationShopRow(
+                  item: item,
+                  gold: state.gold,
+                  onPressed: () => onBuy(slotKind, item),
+                )
+            else
+              _PlacedDecorationRow(
+                placed: placed,
+                gold: state.gold,
+                onUpgrade: () => onUpgrade(slotKind),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DecorationShopRow extends StatelessWidget {
+  const _DecorationShopRow({
+    required this.item,
+    required this.gold,
+    required this.onPressed,
+  });
+
+  final DecorationItem item;
+  final double gold;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final affordable = gold >= item.baseCost;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          _DecorationIcon(item: item),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.name,
+                  style: const TextStyle(fontWeight: FontWeight.w900),
+                ),
+                Text(
+                  '+${item.incomePerLevel.toStringAsFixed(1)} G/s  매력 +${item.appealPerLevel}',
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          FilledButton.tonal(
+            onPressed: onPressed,
+            style: FilledButton.styleFrom(
+              foregroundColor: affordable
+                  ? const Color(0xFF0F705F)
+                  : const Color(0xFF8B7E6E),
+            ),
+            child: Text('${item.baseCost} G'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlacedDecorationRow extends StatelessWidget {
+  const _PlacedDecorationRow({
+    required this.placed,
+    required this.gold,
+    required this.onUpgrade,
+  });
+
+  final PlacedDecoration placed;
+  final double gold;
+  final VoidCallback onUpgrade;
+
+  @override
+  Widget build(BuildContext context) {
+    final item = DecorationCatalog.byId(placed.itemId);
+    final isMaxed = placed.level >= 10;
+    final cost = item.costForLevel(placed.level);
+    final affordable = gold >= cost && !isMaxed;
+
+    return Row(
+      children: [
+        _DecorationIcon(item: item),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${item.name} Lv.${placed.level}',
+                style: const TextStyle(fontWeight: FontWeight.w900),
+              ),
+              Text(
+                '+${(item.incomePerLevel * placed.level).toStringAsFixed(1)} G/s  매력 +${item.appealPerLevel * placed.level}',
+                style: const TextStyle(fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+        FilledButton(
+          onPressed: isMaxed ? null : onUpgrade,
+          style: FilledButton.styleFrom(
+            backgroundColor: affordable ? null : const Color(0xFFE4DED2),
+            foregroundColor: affordable ? null : const Color(0xFF8B7E6E),
+          ),
+          child: Text(isMaxed ? 'MAX' : '$cost G'),
+        ),
+      ],
+    );
+  }
+}
+
+class _DecorationIcon extends StatelessWidget {
+  const _DecorationIcon({required this.item});
+
+  final DecorationItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 46,
+      height: 46,
+      decoration: BoxDecoration(
+        color: item.color,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.white, width: 2),
+      ),
+      child: Icon(item.icon, color: Colors.white),
     );
   }
 }
