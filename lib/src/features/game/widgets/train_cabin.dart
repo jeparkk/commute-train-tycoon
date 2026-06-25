@@ -1,12 +1,13 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
-import '../../../core/assets/game_asset.dart';
-import '../../../core/widgets/asset_sprite.dart';
+import '../models/decoration.dart';
 import '../models/game_state.dart';
 import '../models/slot_kind.dart';
 import '../models/upgrade_slot.dart';
 
-class TrainCabin extends StatelessWidget {
+class TrainCabin extends StatefulWidget {
   const TrainCabin({
     required this.state,
     required this.onUpgrade,
@@ -19,63 +20,458 @@ class TrainCabin extends StatelessWidget {
   final VoidCallback onOpenDecorations;
 
   @override
+  State<TrainCabin> createState() => _TrainCabinState();
+}
+
+class _TrainCabinState extends State<TrainCabin>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final seat = widget.state.slots[SlotKind.seat]!;
+    final kiosk = widget.state.slots[SlotKind.kiosk]!;
+    final hasDecorations = widget.state.placedDecorationCount > 0;
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        final pulse = (math.sin(_controller.value * math.pi * 2) + 1) / 2;
+        final bob = math.sin(_controller.value * math.pi * 2) * 2;
+
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            color: const Color(0xFF316C74),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFF263B39), width: 3),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x33263B39),
+                blurRadius: 22,
+                offset: Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: AspectRatio(
+              aspectRatio: 1.18,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Stack(
+                  children: [
+                    const Positioned.fill(child: _CabinSceneBackground()),
+                    const Positioned(
+                      left: 18,
+                      right: 18,
+                      top: 24,
+                      child: _WindowStrip(),
+                    ),
+                    Positioned(
+                      left: 14,
+                      right: 14,
+                      bottom: 8,
+                      child: _TrackFloor(hasDecorations: hasDecorations),
+                    ),
+                    Positioned(
+                      left: 28,
+                      top: 126 + bob,
+                      child: _Passenger(
+                        color: const Color(0xFFEB7D65),
+                        shirt: const Color(0xFFFFD36A),
+                        label: '+팁',
+                        delay: pulse,
+                      ),
+                    ),
+                    Positioned(
+                      right: 105,
+                      top: 116 - bob,
+                      child: _Passenger(
+                        color: const Color(0xFF667BC6),
+                        shirt: const Color(0xFF8ED5C2),
+                        label: 'VIP',
+                        delay: 1 - pulse,
+                      ),
+                    ),
+                    _SceneTapTarget(
+                      left: 18,
+                      top: 174,
+                      width: 175,
+                      height: 122,
+                      ready: _isReady(seat),
+                      pulse: pulse,
+                      label: '좌석 Lv.${seat.level}',
+                      subLabel: seat.isMaxed ? 'MAX' : '${seat.nextCost} G',
+                      onTap: () => widget.onUpgrade(SlotKind.seat),
+                      child: _SeatObject(level: seat.level),
+                    ),
+                    _SceneTapTarget(
+                      right: 16,
+                      top: 154,
+                      width: 128,
+                      height: 150,
+                      ready: _isReady(kiosk),
+                      pulse: 1 - pulse,
+                      label: '매점 Lv.${kiosk.level}',
+                      subLabel: kiosk.isMaxed ? 'MAX' : '${kiosk.nextCost} G',
+                      onTap: () => widget.onUpgrade(SlotKind.kiosk),
+                      child: _KioskObject(level: kiosk.level),
+                    ),
+                    _DecorationSlot(
+                      left: 22,
+                      top: 94,
+                      title: '창가 장식',
+                      placed:
+                          widget.state.decorations[DecorationSlotKind.window],
+                      pulse: pulse,
+                      onTap: widget.onOpenDecorations,
+                    ),
+                    _DecorationSlot(
+                      right: 145,
+                      top: 93,
+                      title: '벽 장식',
+                      placed: widget.state.decorations[DecorationSlotKind.wall],
+                      pulse: 1 - pulse,
+                      onTap: widget.onOpenDecorations,
+                    ),
+                    _DecorationSlot(
+                      left: 210,
+                      bottom: 39,
+                      title: '바닥 장식',
+                      placed:
+                          widget.state.decorations[DecorationSlotKind.floor],
+                      pulse: pulse,
+                      onTap: widget.onOpenDecorations,
+                    ),
+                    Positioned(
+                      right: 20,
+                      bottom: 28 + bob,
+                      child: _Mascot(energized: widget.state.focusBoostEnabled),
+                    ),
+                    Positioned(
+                      left: 185,
+                      bottom: 72,
+                      child: _LostItem(pulse: pulse),
+                    ),
+                    Positioned(
+                      left: 12,
+                      top: 10,
+                      child: _SceneBadge(
+                        text: 'COMMUTE EXPRESS',
+                        icon: Icons.train_rounded,
+                      ),
+                    ),
+                    Positioned(
+                      right: 12,
+                      top: 10,
+                      child: _IncomeBubble(
+                        text:
+                            '+${widget.state.activeIncomePerSecond.toStringAsFixed(1)} G/s',
+                        pulse: pulse,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  bool _isReady(UpgradeSlot slot) {
+    return widget.state.gold >= slot.nextCost && !slot.isMaxed;
+  }
+}
+
+class _CabinSceneBackground extends StatelessWidget {
+  const _CabinSceneBackground();
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(painter: _CabinBackgroundPainter());
+  }
+}
+
+class _CabinBackgroundPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final wall = Paint()..color = const Color(0xFFFFF1CF);
+    final lowerWall = Paint()..color = const Color(0xFFF4CF87);
+    final floor = Paint()..color = const Color(0xFFD7B979);
+    final line = Paint()
+      ..color = const Color(0xFF27484F)
+      ..strokeWidth = 3
+      ..style = PaintingStyle.stroke;
+    final trim = Paint()..color = const Color(0xFF46A49D);
+
+    canvas.drawRect(Offset.zero & size, wall);
+    canvas.drawRect(
+      Rect.fromLTWH(0, size.height * 0.62, size.width, size.height * 0.38),
+      floor,
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(0, size.height * 0.54, size.width, size.height * 0.1),
+      lowerWall,
+    );
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, 18), trim);
+    canvas.drawLine(
+      Offset(0, size.height * 0.62),
+      Offset(size.width, size.height * 0.62),
+      line,
+    );
+    canvas.drawLine(
+      Offset(0, size.height * 0.54),
+      Offset(size.width, size.height * 0.54),
+      Paint()
+        ..color = const Color(0xFFC39D58)
+        ..strokeWidth = 2,
+    );
+
+    for (var i = 0; i < 8; i++) {
+      final y = size.height * 0.7 + i * 18;
+      canvas.drawLine(
+        Offset(0, y),
+        Offset(size.width, y + 22),
+        Paint()
+          ..color = const Color(0x1A604822)
+          ..strokeWidth = 2,
+      );
+    }
+
+    canvas.drawRect(Offset.zero & size, line);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _WindowStrip extends StatelessWidget {
+  const _WindowStrip();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: List.generate(3, (index) {
+        return Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(right: index == 2 ? 0 : 8),
+            child: const _CabinWindow(),
+          ),
+        );
+      }),
+    );
+  }
+}
+
+class _CabinWindow extends StatelessWidget {
+  const _CabinWindow();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 64,
+      decoration: BoxDecoration(
+        color: const Color(0xFFAEE6F3),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFF315A66), width: 3),
+      ),
+      child: CustomPaint(painter: _WindowPainter()),
+    );
+  }
+}
+
+class _WindowPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final sky = Paint()..color = const Color(0xFFAEE6F3);
+    final hill = Paint()..color = const Color(0xFF87C97A);
+    final building = Paint()..color = const Color(0xFFEFF7F4);
+    final shine = Paint()..color = const Color(0x99FFFFFF);
+
+    canvas.drawRect(Offset.zero & size, sky);
+    canvas.drawOval(
+      Rect.fromLTWH(-10, size.height * 0.5, size.width * 0.75, 36),
+      hill,
+    );
+    canvas.drawOval(
+      Rect.fromLTWH(size.width * 0.42, size.height * 0.48, size.width, 38),
+      Paint()..color = const Color(0xFF69B778),
+    );
+    for (var i = 0; i < 3; i++) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(12 + i * 28, 28 - i * 4, 18, 28 + i * 2),
+          const Radius.circular(2),
+        ),
+        building,
+      );
+    }
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(8, 6, size.width * 0.4, 14),
+        const Radius.circular(6),
+      ),
+      shine,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _SceneTapTarget extends StatelessWidget {
+  const _SceneTapTarget({
+    required this.top,
+    required this.width,
+    required this.height,
+    required this.ready,
+    required this.pulse,
+    required this.label,
+    required this.subLabel,
+    required this.onTap,
+    required this.child,
+    this.left,
+    this.right,
+  });
+
+  final double? left;
+  final double? right;
+  final double top;
+  final double width;
+  final double height;
+  final bool ready;
+  final double pulse;
+  final String label;
+  final String subLabel;
+  final VoidCallback onTap;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      left: left,
+      right: right,
+      top: top,
+      width: width,
+      height: height,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned.fill(child: child),
+              if (ready)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: Color.lerp(
+                            const Color(0x00FFFFFF),
+                            const Color(0xFFFFF5A8),
+                            pulse,
+                          )!,
+                          width: 3,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Color.lerp(
+                              const Color(0x00FFF5A8),
+                              const Color(0x66FFF5A8),
+                              pulse,
+                            )!,
+                            blurRadius: 18,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              Positioned(
+                left: 8,
+                right: 8,
+                bottom: -8,
+                child: _ObjectLabel(
+                  label: label,
+                  subLabel: subLabel,
+                  ready: ready,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ObjectLabel extends StatelessWidget {
+  const _ObjectLabel({
+    required this.label,
+    required this.subLabel,
+    required this.ready,
+  });
+
+  final String label;
+  final String subLabel;
+  final bool ready;
+
+  @override
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFF4D8F9B),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFF27484F), width: 3),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x3327484F),
-            blurRadius: 18,
-            offset: Offset(0, 10),
-          ),
-        ],
+        color: ready ? const Color(0xFFF9E57A) : const Color(0xEEFFFFFF),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: ready ? const Color(0xFF9B6A00) : const Color(0xFFE1D8C8),
+          width: 2,
+        ),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 10, 10, 14),
-        child: Column(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const _CabinRoof(),
-            const SizedBox(height: 10),
-            Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF6DF),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFF27484F), width: 2),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
-                child: Column(
-                  children: [
-                    const _WindowRow(),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _UpgradeObject(
-                            slot: state.slots[SlotKind.seat]!,
-                            gold: state.gold,
-                            onTap: () => onUpgrade(SlotKind.seat),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _UpgradeObject(
-                            slot: state.slots[SlotKind.kiosk]!,
-                            gold: state.gold,
-                            onTap: () => onUpgrade(SlotKind.kiosk),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    _DecorationObject(state: state, onTap: onOpenDecorations),
-                    const SizedBox(height: 10),
-                    const _CabinFloor(),
-                  ],
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFF263B39),
                 ),
+              ),
+            ),
+            const SizedBox(width: 5),
+            Text(
+              subLabel,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                color: Color(0xFF70550B),
               ),
             ),
           ],
@@ -85,240 +481,381 @@ class TrainCabin extends StatelessWidget {
   }
 }
 
-class _CabinRoof extends StatelessWidget {
-  const _CabinRoof();
+class _SeatObject extends StatelessWidget {
+  const _SeatObject({required this.level});
+
+  final int level;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: const Color(0xFFFFCF5A),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFF604822), width: 2),
-          ),
-          child: const Icon(Icons.train_rounded, color: Color(0xFF2B2C28)),
+    final capped = level.clamp(1, 3);
+    final color = [
+      const Color(0xFF4E9B8C),
+      const Color(0xFF5F8DC7),
+      const Color(0xFFC27B65),
+    ][capped - 1];
+
+    return CustomPaint(
+      painter: _SeatPainter(color: color, level: capped),
+      child: const SizedBox.expand(),
+    );
+  }
+}
+
+class _SeatPainter extends CustomPainter {
+  _SeatPainter({required this.color, required this.level});
+
+  final Color color;
+  final int level;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final outline = Paint()..color = const Color(0xFF263B39);
+    final base = Paint()..color = color;
+    final cushion = Paint()..color = Color.lerp(color, Colors.white, 0.28)!;
+    final shadow = Paint()..color = const Color(0x33263B39);
+
+    canvas.drawOval(
+      Rect.fromLTWH(
+        size.width * 0.08,
+        size.height * 0.78,
+        size.width * 0.8,
+        18,
+      ),
+      shadow,
+    );
+
+    for (var i = 0; i < 2; i++) {
+      final x = size.width * (0.08 + i * 0.42);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(x, size.height * 0.2, size.width * 0.36, 56),
+          const Radius.circular(10),
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Container(
-            height: 42,
-            decoration: BoxDecoration(
-              color: const Color(0xFFCDEEF5),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFF27484F), width: 2),
-            ),
-            child: const Center(
-              child: Text(
-                'COMMUTE EXPRESS',
-                style: TextStyle(
-                  color: Color(0xFF315A66),
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0,
-                  fontSize: 12,
-                ),
-              ),
-            ),
+        outline,
+      );
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(
+            x + 4,
+            size.height * 0.2 + 4,
+            size.width * 0.36 - 8,
+            48,
           ),
+          const Radius.circular(8),
         ),
-      ],
-    );
-  }
-}
-
-class _WindowRow extends StatelessWidget {
-  const _WindowRow();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: List.generate(4, (index) {
-        return Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(right: index == 3 ? 0 : 7),
-            child: Container(
-              height: 46,
-              decoration: BoxDecoration(
-                color: const Color(0xFFD8F6FF),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFF598897), width: 2),
-              ),
-              child: Align(
-                alignment: Alignment.topLeft,
-                child: Container(
-                  width: 26,
-                  height: 18,
-                  margin: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.7),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ),
-              ),
-            ),
+        cushion,
+      );
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(x - 2, size.height * 0.58, size.width * 0.4, 28),
+          const Radius.circular(9),
+        ),
+        outline,
+      );
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(
+            x + 3,
+            size.height * 0.58 + 4,
+            size.width * 0.4 - 10,
+            20,
           ),
-        );
-      }),
-    );
+          const Radius.circular(7),
+        ),
+        base,
+      );
+    }
+
+    if (level >= 2) {
+      final rail = Paint()
+        ..color = const Color(0xFFFFD36A)
+        ..strokeWidth = 5
+        ..strokeCap = StrokeCap.round;
+      canvas.drawLine(
+        Offset(size.width * 0.04, size.height * 0.18),
+        Offset(size.width * 0.9, size.height * 0.18),
+        rail,
+      );
+    }
+    if (level >= 3) {
+      final sparkle = Paint()..color = const Color(0xFFFFF5A8);
+      canvas.drawCircle(
+        Offset(size.width * 0.84, size.height * 0.32),
+        5,
+        sparkle,
+      );
+      canvas.drawCircle(
+        Offset(size.width * 0.1, size.height * 0.42),
+        3,
+        sparkle,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _SeatPainter oldDelegate) {
+    return oldDelegate.color != color || oldDelegate.level != level;
   }
 }
 
-class _UpgradeObject extends StatelessWidget {
-  const _UpgradeObject({
-    required this.slot,
-    required this.gold,
-    required this.onTap,
-  });
+class _KioskObject extends StatelessWidget {
+  const _KioskObject({required this.level});
 
-  final UpgradeSlot slot;
-  final double gold;
-  final VoidCallback onTap;
+  final int level;
 
   @override
   Widget build(BuildContext context) {
-    final affordable = gold >= slot.nextCost && !slot.isMaxed;
-
-    return _CabinObjectButton(
-      color: slot.kind.color,
-      assetKey: GameAssets.slotLevelKey(slot.kind.assetId, slot.level),
-      icon: slot.kind.icon,
-      title: '${slot.kind.label} Lv.${slot.level}',
-      subtitle: '+${slot.incomePerSecond.toStringAsFixed(1)} G/s',
-      actionLabel: slot.isMaxed ? 'MAX' : '${slot.nextCost} G',
-      isActionReady: affordable,
-      onTap: onTap,
+    return CustomPaint(
+      painter: _KioskPainter(level: level.clamp(1, 3)),
+      child: const SizedBox.expand(),
     );
   }
 }
 
-class _DecorationObject extends StatelessWidget {
-  const _DecorationObject({required this.state, required this.onTap});
+class _KioskPainter extends CustomPainter {
+  _KioskPainter({required this.level});
 
-  final GameState state;
-  final VoidCallback onTap;
+  final int level;
 
   @override
-  Widget build(BuildContext context) {
-    return _CabinObjectButton(
-      color: const Color(0xFF7A9D54),
-      assetKey: 'decor_manager',
-      icon: Icons.local_florist_rounded,
-      title: '장식 관리',
-      subtitle: '배치 ${state.placedDecorationCount}/3',
-      actionLabel: '꾸미기',
-      isActionReady: true,
-      horizontal: true,
-      onTap: onTap,
+  void paint(Canvas canvas, Size size) {
+    final outline = Paint()..color = const Color(0xFF263B39);
+    final body = Paint()..color = const Color(0xFFFFC857);
+    final counter = Paint()..color = const Color(0xFF4E9B8C);
+    final awning = Paint()..color = const Color(0xFFEB7D65);
+    final glass = Paint()..color = const Color(0xFFCDEEF5);
+
+    canvas.drawOval(
+      Rect.fromLTWH(
+        size.width * 0.08,
+        size.height * 0.84,
+        size.width * 0.82,
+        18,
+      ),
+      Paint()..color = const Color(0x33263B39),
     );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          size.width * 0.12,
+          size.height * 0.24,
+          size.width * 0.72,
+          84,
+        ),
+        const Radius.circular(10),
+      ),
+      outline,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          size.width * 0.16,
+          size.height * 0.28,
+          size.width * 0.64,
+          76,
+        ),
+        const Radius.circular(8),
+      ),
+      body,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          size.width * 0.1,
+          size.height * 0.16,
+          size.width * 0.76,
+          24,
+        ),
+        const Radius.circular(8),
+      ),
+      outline,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          size.width * 0.14,
+          size.height * 0.18,
+          size.width * 0.68,
+          18,
+        ),
+        const Radius.circular(6),
+      ),
+      awning,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          size.width * 0.25,
+          size.height * 0.36,
+          size.width * 0.38,
+          26,
+        ),
+        const Radius.circular(5),
+      ),
+      glass,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          size.width * 0.08,
+          size.height * 0.68,
+          size.width * 0.8,
+          24,
+        ),
+        const Radius.circular(8),
+      ),
+      outline,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          size.width * 0.13,
+          size.height * 0.7,
+          size.width * 0.7,
+          18,
+        ),
+        const Radius.circular(6),
+      ),
+      counter,
+    );
+
+    if (level >= 2) {
+      final sign = Paint()..color = const Color(0xFFFFF6DF);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(
+            size.width * 0.28,
+            size.height * 0.07,
+            size.width * 0.42,
+            20,
+          ),
+          const Radius.circular(6),
+        ),
+        outline,
+      );
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(
+            size.width * 0.31,
+            size.height * 0.085,
+            size.width * 0.36,
+            14,
+          ),
+          const Radius.circular(4),
+        ),
+        sign,
+      );
+    }
+    if (level >= 3) {
+      final lamp = Paint()..color = const Color(0xFFFFF5A8);
+      canvas.drawCircle(Offset(size.width * 0.72, size.height * 0.46), 6, lamp);
+      canvas.drawCircle(Offset(size.width * 0.2, size.height * 0.46), 4, lamp);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _KioskPainter oldDelegate) {
+    return oldDelegate.level != level;
   }
 }
 
-class _CabinObjectButton extends StatelessWidget {
-  const _CabinObjectButton({
-    required this.color,
-    required this.assetKey,
-    required this.icon,
+class _DecorationSlot extends StatelessWidget {
+  const _DecorationSlot({
     required this.title,
-    required this.subtitle,
-    required this.actionLabel,
-    required this.isActionReady,
+    required this.placed,
+    required this.pulse,
     required this.onTap,
-    this.horizontal = false,
+    this.left,
+    this.right,
+    this.top,
+    this.bottom,
   });
 
-  final Color color;
-  final String assetKey;
-  final IconData icon;
   final String title;
-  final String subtitle;
-  final String actionLabel;
-  final bool isActionReady;
+  final PlacedDecoration? placed;
+  final double pulse;
   final VoidCallback onTap;
-  final bool horizontal;
+  final double? left;
+  final double? right;
+  final double? top;
+  final double? bottom;
 
   @override
   Widget build(BuildContext context) {
-    final details = Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: horizontal
-          ? CrossAxisAlignment.start
-          : CrossAxisAlignment.center,
-      children: [
-        Text(
-          title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          textAlign: horizontal ? TextAlign.start : TextAlign.center,
-          style: const TextStyle(
-            fontWeight: FontWeight.w900,
-            color: Color(0xFF273735),
-            fontSize: 16,
-          ),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          subtitle,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(color: Color(0xFF4F5D58), fontSize: 12),
-        ),
-      ],
-    );
+    final item = placed == null ? null : DecorationCatalog.byId(placed!.itemId);
+    final label = item == null ? '+' : 'Lv.${placed!.level}';
 
-    final content = [
-      _ObjectSprite(color: color, icon: icon, assetKey: assetKey),
-      SizedBox(width: horizontal ? 12 : 0, height: horizontal ? 0 : 8),
-      if (horizontal) Expanded(child: details) else details,
-      SizedBox(width: horizontal ? 10 : 0, height: horizontal ? 0 : 8),
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: isActionReady
-              ? const Color(0xFFE6FFF7)
-              : const Color(0xFFF2EBDD),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: isActionReady
-                ? const Color(0xFF0F705F)
-                : const Color(0xFFC8BCAA),
-          ),
-        ),
-        child: Text(
-          actionLabel,
-          style: TextStyle(
-            fontWeight: FontWeight.w900,
-            color: isActionReady
-                ? const Color(0xFF0F705F)
-                : const Color(0xFF8B7E6E),
-            fontSize: 12,
-          ),
-        ),
-      ),
-    ];
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Ink(
-          height: horizontal ? 118 : 190,
-          decoration: BoxDecoration(
-            color: Color.lerp(color, Colors.white, 0.82),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: color, width: 2),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: horizontal
-                ? Row(children: content)
-                : Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: content,
+    return Positioned(
+      left: left,
+      right: right,
+      top: top,
+      bottom: bottom,
+      width: 80,
+      height: 58,
+      child: Tooltip(
+        message: title,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: onTap,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: item == null
+                    ? Colors.white.withValues(alpha: 0.38)
+                    : Color.lerp(item.color, Colors.white, 0.66),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: item == null
+                      ? Color.lerp(
+                          const Color(0x889B6A00),
+                          const Color(0xFFFFD36A),
+                          pulse,
+                        )!
+                      : item.color,
+                  width: 2,
+                ),
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Positioned(
+                    top: 4,
+                    left: 3,
+                    right: 3,
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 8,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF4F5D58),
+                      ),
+                    ),
                   ),
+                  Icon(
+                    item?.icon ?? Icons.add_rounded,
+                    color: item?.color ?? const Color(0xFF9B6A00),
+                    size: 26,
+                  ),
+                  Positioned(
+                    right: 5,
+                    bottom: 4,
+                    child: Text(
+                      label,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF263B39),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -326,80 +863,345 @@ class _CabinObjectButton extends StatelessWidget {
   }
 }
 
-class _ObjectSprite extends StatelessWidget {
-  const _ObjectSprite({
+class _Passenger extends StatelessWidget {
+  const _Passenger({
     required this.color,
-    required this.icon,
-    required this.assetKey,
+    required this.shirt,
+    required this.label,
+    required this.delay,
   });
 
   final Color color;
-  final IconData icon;
-  final String assetKey;
+  final Color shirt;
+  final String label;
+  final double delay;
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        Container(
-          width: 64,
-          height: 12,
-          margin: const EdgeInsets.only(top: 54),
-          decoration: BoxDecoration(
-            color: const Color(0x33273B35),
-            borderRadius: BorderRadius.circular(999),
+    return SizedBox(
+      width: 46,
+      height: 82,
+      child: Stack(
+        alignment: Alignment.bottomCenter,
+        children: [
+          Positioned(
+            top: 0,
+            child: Opacity(
+              opacity: 0.6 + delay * 0.4,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: const Color(0xFFE1D8C8)),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 3,
+                  ),
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF0F705F),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
-        ),
-        Container(
-          width: 58,
-          height: 58,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.white, width: 3),
+          Positioned(
+            bottom: 0,
+            child: CustomPaint(
+              painter: _PassengerPainter(color: color, shirt: shirt),
+              size: const Size(38, 60),
+            ),
           ),
-          child: AssetSprite(
-            assetKey: assetKey,
-            fallbackIcon: icon,
-            fallbackColor: color,
-            size: 58,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
-class _CabinFloor extends StatelessWidget {
-  const _CabinFloor();
+class _PassengerPainter extends CustomPainter {
+  _PassengerPainter({required this.color, required this.shirt});
+
+  final Color color;
+  final Color shirt;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final outline = Paint()..color = const Color(0xFF263B39);
+    canvas.drawCircle(Offset(size.width / 2, 12), 11, outline);
+    canvas.drawCircle(Offset(size.width / 2, 12), 8, Paint()..color = color);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(7, 22, size.width - 14, 26),
+        const Radius.circular(9),
+      ),
+      outline,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(10, 25, size.width - 20, 20),
+        const Radius.circular(7),
+      ),
+      Paint()..color = shirt,
+    );
+    canvas.drawLine(
+      Offset(13, 48),
+      Offset(10, 58),
+      Paint()
+        ..color = outline.color
+        ..strokeWidth = 4
+        ..strokeCap = StrokeCap.round,
+    );
+    canvas.drawLine(
+      Offset(size.width - 13, 48),
+      Offset(size.width - 10, 58),
+      Paint()
+        ..color = outline.color
+        ..strokeWidth = 4
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _PassengerPainter oldDelegate) {
+    return oldDelegate.color != color || oldDelegate.shirt != shirt;
+  }
+}
+
+class _Mascot extends StatelessWidget {
+  const _Mascot({required this.energized});
+
+  final bool energized;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 54,
+      height: 58,
+      child: Stack(
+        children: [
+          CustomPaint(
+            painter: _MascotPainter(energized: energized),
+            size: const Size(54, 58),
+          ),
+          Positioned(
+            top: 0,
+            right: 0,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: energized ? const Color(0xFFFFF5A8) : Colors.white,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: const Color(0xFFE1D8C8)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                child: Text(
+                  energized ? '2x' : '휴식',
+                  style: const TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF70550B),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MascotPainter extends CustomPainter {
+  _MascotPainter({required this.energized});
+
+  final bool energized;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final outline = Paint()..color = const Color(0xFF263B39);
+    final fur = Paint()
+      ..color = energized ? const Color(0xFFFFD36A) : const Color(0xFFD6C6B0);
+    final face = Paint()..color = const Color(0xFFFFF1CF);
+
+    final body = RRect.fromRectAndRadius(
+      Rect.fromLTWH(8, 20, 38, 30),
+      const Radius.circular(16),
+    );
+    canvas.drawRRect(body, outline);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(11, 23, 32, 24),
+        const Radius.circular(14),
+      ),
+      fur,
+    );
+    final head = Rect.fromLTWH(13, 8, 28, 28);
+    canvas.drawOval(head, outline);
+    canvas.drawOval(Rect.fromLTWH(16, 11, 22, 22), face);
+    final earPath = Path()
+      ..moveTo(15, 14)
+      ..lineTo(18, 4)
+      ..lineTo(24, 13)
+      ..close()
+      ..moveTo(38, 14)
+      ..lineTo(35, 4)
+      ..lineTo(29, 13)
+      ..close();
+    canvas.drawPath(earPath, outline);
+    canvas.drawCircle(const Offset(22, 22), 2, outline);
+    canvas.drawCircle(const Offset(32, 22), 2, outline);
+    canvas.drawCircle(
+      const Offset(27, 26),
+      2,
+      Paint()..color = const Color(0xFFEB7D65),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _MascotPainter oldDelegate) {
+    return oldDelegate.energized != energized;
+  }
+}
+
+class _LostItem extends StatelessWidget {
+  const _LostItem({required this.pulse});
+
+  final double pulse;
+
+  @override
+  Widget build(BuildContext context) {
+    return Transform.scale(
+      scale: 0.94 + pulse * 0.08,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF6DF),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFF9B6A00), width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: Color.lerp(
+                const Color(0x11FFF5A8),
+                const Color(0xAAFFF5A8),
+                pulse,
+              )!,
+              blurRadius: 14,
+            ),
+          ],
+        ),
+        child: const Padding(
+          padding: EdgeInsets.all(7),
+          child: Icon(
+            Icons.inventory_2_rounded,
+            size: 22,
+            color: Color(0xFFD2A84F),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TrackFloor extends StatelessWidget {
+  const _TrackFloor({required this.hasDecorations});
+
+  final bool hasDecorations;
 
   @override
   Widget build(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          height: 14,
-          decoration: BoxDecoration(
-            color: const Color(0xFFE6D4AF),
-            borderRadius: BorderRadius.circular(999),
-          ),
-        ),
-        const SizedBox(height: 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(5, (index) {
+          children: List.generate(6, (index) {
             return Container(
-              width: 22,
+              width: 26,
               height: 6,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
+              margin: const EdgeInsets.symmetric(horizontal: 3),
               decoration: BoxDecoration(
-                color: const Color(0xFF7F7566),
+                color: hasDecorations
+                    ? const Color(0xFF7A9D54)
+                    : const Color(0xFF7F7566),
                 borderRadius: BorderRadius.circular(999),
               ),
             );
           }),
         ),
       ],
+    );
+  }
+}
+
+class _SceneBadge extends StatelessWidget {
+  const _SceneBadge({required this.text, required this.icon});
+
+  final String text;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xEEFFFFFF),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0xFFE1D8C8)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: const Color(0xFF2E7D73)),
+            const SizedBox(width: 5),
+            Text(
+              text,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                color: Color(0xFF315A66),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _IncomeBubble extends StatelessWidget {
+  const _IncomeBubble({required this.text, required this.pulse});
+
+  final String text;
+  final double pulse;
+
+  @override
+  Widget build(BuildContext context) {
+    return Transform.translate(
+      offset: Offset(0, -pulse * 4),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F705F),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: Colors.white, width: 2),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          child: Text(
+            text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

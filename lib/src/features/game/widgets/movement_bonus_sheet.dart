@@ -66,7 +66,7 @@ class MovementBonusSheet extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '이동 보너스',
+                          '도착역 리포트',
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.w900,
@@ -75,7 +75,7 @@ class MovementBonusSheet extends StatelessWidget {
                         ),
                         SizedBox(height: 3),
                         Text(
-                          'GPS 연결 전 정산 흐름을 테스트합니다',
+                          '출발역과 도착역 사이 운행 거리를 정산합니다',
                           style: TextStyle(
                             color: Color(0xFF65706C),
                             fontWeight: FontWeight.w700,
@@ -140,13 +140,13 @@ class MovementBonusSheet extends StatelessWidget {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.my_location_rounded),
-                label: Text(locationBusy ? '위치 확인 중' : '현재 위치 정산'),
+                label: Text(locationBusy ? '도착역 확인 중' : '도착역 정산'),
               ),
               const SizedBox(height: 8),
               FilledButton.icon(
                 onPressed: onSettleDemoMove,
                 icon: const Icon(Icons.directions_train_rounded),
-                label: const Text('테스트 이동 정산'),
+                label: const Text('테스트 운행 정산'),
               ),
             ],
           ),

@@ -45,7 +45,7 @@ class GameHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '객실을 눌러 수익을 키우세요 · 워프 ${state.warpPoints} WP',
+                  '객실 터치로 성장 · WP ${state.warpPoints}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: const Color(0xFF65706C),
                     fontWeight: FontWeight.w700,

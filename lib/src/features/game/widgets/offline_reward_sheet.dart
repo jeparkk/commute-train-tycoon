@@ -59,7 +59,7 @@ class OfflineRewardSheet extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '차고지 수익 도착',
+                          '차고지 정산표',
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.w900,
@@ -68,7 +68,7 @@ class OfflineRewardSheet extends StatelessWidget {
                         ),
                         SizedBox(height: 3),
                         Text(
-                          '앱을 꺼둔 동안 열차가 운행했어요',
+                          '역무원이 모아둔 운임을 확인하세요',
                           style: TextStyle(
                             color: Color(0xFF65706C),
                             fontWeight: FontWeight.w700,
@@ -91,7 +91,7 @@ class OfflineRewardSheet extends StatelessWidget {
                   child: Column(
                     children: [
                       const Text(
-                        '정산 가능 골드',
+                        '보관된 운임',
                         style: TextStyle(
                           color: Color(0xFF65706C),
                           fontWeight: FontWeight.w800,
@@ -146,7 +146,7 @@ class OfflineRewardSheet extends StatelessWidget {
                   Expanded(
                     child: FilledButton.tonal(
                       onPressed: () => onClaim(doubled: true),
-                      child: const Text('2배 정산 테스트'),
+                      child: const Text('광고 보고 2배'),
                     ),
                   ),
                 ],

@@ -17,9 +17,10 @@ void main() {
     expect(find.text('출근열차 키우기'), findsOneWidget);
     expect(find.text('좌석 Lv.1'), findsOneWidget);
     expect(find.text('매점 Lv.1'), findsOneWidget);
-    expect(find.text('장식 관리'), findsOneWidget);
+    expect(find.text('창가 장식'), findsOneWidget);
     expect(find.text('COMMUTE EXPRESS'), findsOneWidget);
-    expect(find.byIcon(Icons.train_rounded), findsOneWidget);
+    expect(find.text('VIP'), findsOneWidget);
+    expect(find.text('+3.8 G/s'), findsOneWidget);
   });
 
   testWidgets('upgrades a slot when enough gold is available', (tester) async {
@@ -41,7 +42,7 @@ void main() {
     await tester.pumpWidget(const CommuteTrainTycoonApp());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('장식 관리'));
+    await tester.tap(find.text('창가 장식'));
     await tester.pumpAndSettle();
 
     expect(find.text('장식 상점'), findsOneWidget);
@@ -77,17 +78,17 @@ void main() {
     await tester.tap(find.text('이동'));
     await tester.pumpAndSettle();
 
-    expect(find.text('이동 보너스'), findsOneWidget);
+    expect(find.text('도착역 리포트'), findsOneWidget);
     expect(find.text('실제 GPS'), findsOneWidget);
-    expect(find.text('현재 위치 정산'), findsOneWidget);
+    expect(find.text('도착역 정산'), findsOneWidget);
     expect(find.text('아직 정산된 이동 기록이 없습니다.'), findsOneWidget);
 
-    await tester.tap(find.text('테스트 이동 정산'));
+    await tester.tap(find.text('테스트 운행 정산'));
     await tester.pumpAndSettle();
 
     expect(find.text('최근 이동 정산'), findsOneWidget);
     expect(find.text('7.2 km'), findsOneWidget);
-    expect(find.text('이동 정산 완료: +259 G / +173 WP'), findsOneWidget);
+    expect(find.text('테스트 운행 정산: +259 G / +173 WP'), findsOneWidget);
   });
 
   testWidgets('GPS movement settlement stores a checkpoint before rewarding', (
@@ -117,17 +118,17 @@ void main() {
     await tester.tap(find.text('이동'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('현재 위치 정산'));
+    await tester.tap(find.text('도착역 정산'));
     await tester.pumpAndSettle();
 
-    expect(find.text('기준 위치 저장 완료. 다음 이동부터 보상이 정산됩니다'), findsOneWidget);
+    expect(find.text('출발역 등록 완료. 다음 도착역부터 정산됩니다'), findsOneWidget);
 
-    await tester.tap(find.text('현재 위치 정산'));
+    await tester.tap(find.text('도착역 정산'));
     await tester.pumpAndSettle();
 
     expect(find.text('최근 이동 정산'), findsOneWidget);
     expect(find.text('1.0 km'), findsOneWidget);
-    expect(find.text('GPS 이동 정산: +36 G / +24 WP'), findsOneWidget);
+    expect(find.text('도착역 정산: +36 G / +24 WP'), findsOneWidget);
   });
 
   testWidgets('shop supports rewarded ads and VIP pass without SDKs', (
@@ -172,7 +173,7 @@ void main() {
     await tester.pumpWidget(const CommuteTrainTycoonApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('차고지 수익 도착'), findsOneWidget);
+    expect(find.text('차고지 정산표'), findsOneWidget);
     expect(find.text('10시간 0분'), findsOneWidget);
   });
 
@@ -188,15 +189,15 @@ void main() {
     await tester.pumpWidget(const CommuteTrainTycoonApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('차고지 수익 도착'), findsOneWidget);
-    expect(find.text('정산 가능 골드'), findsOneWidget);
+    expect(find.text('차고지 정산표'), findsOneWidget);
+    expect(find.text('보관된 운임'), findsOneWidget);
     expect(find.text('누적 시간'), findsOneWidget);
     expect(find.text('방치 효율'), findsOneWidget);
 
     await tester.tap(find.widgetWithText(FilledButton, '수금'));
     await tester.pumpAndSettle();
 
-    expect(find.text('차고지 수익 도착'), findsNothing);
+    expect(find.text('차고지 정산표'), findsNothing);
     expect(find.text('오프라인 보상 수금 완료'), findsOneWidget);
   });
 }

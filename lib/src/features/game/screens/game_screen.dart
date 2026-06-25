@@ -533,7 +533,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       if (!latest.movementCheckpoint.hasLocation) {
         setState(() {
           _state = latest.copyWith(movementCheckpoint: nextCheckpoint);
-          _toast = '기준 위치 저장 완료. 다음 이동부터 보상이 정산됩니다';
+          _toast = '출발역 등록 완료. 다음 도착역부터 정산됩니다';
         });
         await _save();
         return;
@@ -563,8 +563,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
               : latest.lastMovementReport,
         );
         _toast = report.hasReward
-            ? 'GPS 이동 정산: +${report.gold} G / +${report.warpPoints} WP'
-            : '이동 거리가 짧아 기준 위치만 갱신했습니다';
+            ? '도착역 정산: +${report.gold} G / +${report.warpPoints} WP'
+            : '도착역이 가까워 출발역만 갱신했습니다';
       });
       await _save();
     } on LocationServiceException catch (error) {
@@ -597,7 +597,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         warpPoints: current.warpPoints + report.warpPoints,
         lastMovementReport: report,
       );
-      _toast = '이동 정산 완료: +${report.gold} G / +${report.warpPoints} WP';
+      _toast = '테스트 운행 정산: +${report.gold} G / +${report.warpPoints} WP';
     });
     _save();
   }
