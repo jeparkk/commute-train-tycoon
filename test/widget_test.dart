@@ -130,6 +130,52 @@ void main() {
     expect(find.text('GPS 이동 정산: +36 G / +24 WP'), findsOneWidget);
   });
 
+  testWidgets('shop supports rewarded ads and VIP pass without SDKs', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+
+    await tester.pumpWidget(const CommuteTrainTycoonApp());
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('상점'));
+    await tester.pump();
+    await tester.tap(find.text('상점'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('출퇴근 VIP 패스'), findsOneWidget);
+    expect(find.text('광고 보상'), findsOneWidget);
+    expect(find.text('광고 보고 지원금 받기'), findsOneWidget);
+
+    await tester.tap(find.text('광고 보고 지원금 받기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('긴급 지원금 지급: +160 G'), findsOneWidget);
+    expect(find.text('1회'), findsOneWidget);
+
+    await tester.tap(find.text('VIP 패스 테스트 구매'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('VIP 적용 완료'), findsOneWidget);
+    expect(find.text('광고 없이 지원금 받기'), findsOneWidget);
+    expect(find.text('VIP 패스 활성화 완료'), findsOneWidget);
+  });
+
+  testWidgets('VIP pass expands offline vault to 12 hours', (tester) async {
+    final lastSavedAt = DateTime.now().subtract(const Duration(hours: 10));
+    SharedPreferences.setMockInitialValues({
+      'vipPassActive': true,
+      'adsRemoved': true,
+      'lastSavedAt': lastSavedAt.millisecondsSinceEpoch,
+    });
+
+    await tester.pumpWidget(const CommuteTrainTycoonApp());
+    await tester.pumpAndSettle();
+
+    expect(find.text('차고지 수익 도착'), findsOneWidget);
+    expect(find.text('10시간 0분'), findsOneWidget);
+  });
+
   testWidgets('settles offline reward with a focused bottom sheet', (
     tester,
   ) async {

@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../data/balance_config.dart';
 import '../models/decoration.dart';
 import '../models/game_state.dart';
 import '../models/movement_checkpoint.dart';
@@ -16,6 +17,9 @@ class GameStorage {
   static const _warpPointsKey = 'warpPoints';
   static const _lastSavedAtKey = 'lastSavedAt';
   static const _focusBoostKey = 'focusBoostEnabled';
+  static const _vipPassActiveKey = 'vipPassActive';
+  static const _adsRemovedKey = 'adsRemoved';
+  static const _rewardedAdsWatchedKey = 'rewardedAdsWatched';
   static const _lastMoveDistanceKey = 'lastMoveDistanceKm';
   static const _lastMoveDurationKey = 'lastMoveDurationSeconds';
   static const _lastMoveGoldKey = 'lastMoveGold';
@@ -67,6 +71,11 @@ class GameStorage {
     final storedGold = prefs.getDouble(_goldKey) ?? base.gold;
     final storedWarpPoints = prefs.getInt(_warpPointsKey) ?? base.warpPoints;
     final focusBoostEnabled = prefs.getBool(_focusBoostKey) ?? true;
+    final monetization = base.monetization.copyWith(
+      vipPassActive: prefs.getBool(_vipPassActiveKey) ?? false,
+      adsRemoved: prefs.getBool(_adsRemovedKey) ?? false,
+      rewardedAdsWatched: prefs.getInt(_rewardedAdsWatchedKey) ?? 0,
+    );
     final loaded = base.copyWith(
       gold: storedGold,
       warpPoints: storedWarpPoints,
@@ -75,12 +84,17 @@ class GameStorage {
       lastSavedAt: lastSavedAt,
       movementCheckpoint: _loadMovementCheckpoint(prefs),
       lastMovementReport: _loadMovementReport(prefs),
+      monetization: monetization,
       focusBoostEnabled: focusBoostEnabled,
     );
 
+    final maxOfflineDuration = loaded.monetization.vipPassActive
+        ? BalanceConfig.vipOfflineDuration
+        : OfflineRevenueCalculator.maxOfflineDuration;
     final offlineDuration = OfflineRevenueCalculator.cappedDuration(
       lastSavedAt: loaded.lastSavedAt,
       now: now,
+      maxDuration: maxOfflineDuration,
     );
     final offlineGold = OfflineRevenueCalculator.calculate(
       state: loaded,
@@ -94,7 +108,7 @@ class GameStorage {
       offlineReward: OfflineReward(
         gold: offlineGold,
         duration: offlineDuration,
-        maxDuration: OfflineRevenueCalculator.maxOfflineDuration,
+        maxDuration: maxOfflineDuration,
         efficiency: OfflineRevenueCalculator.offlineEfficiency,
       ),
     );
@@ -109,6 +123,12 @@ class GameStorage {
       state.lastSavedAt.millisecondsSinceEpoch,
     );
     await prefs.setBool(_focusBoostKey, state.focusBoostEnabled);
+    await prefs.setBool(_vipPassActiveKey, state.monetization.vipPassActive);
+    await prefs.setBool(_adsRemovedKey, state.monetization.adsRemoved);
+    await prefs.setInt(
+      _rewardedAdsWatchedKey,
+      state.monetization.rewardedAdsWatched,
+    );
 
     for (final entry in state.slots.entries) {
       await prefs.setInt(_levelKey(entry.key), entry.value.level);

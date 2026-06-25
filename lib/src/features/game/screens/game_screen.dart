@@ -3,30 +3,35 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../data/balance_config.dart';
+import '../models/ad_reward.dart';
 import '../models/decoration.dart';
-import '../models/movement_checkpoint.dart';
 import '../models/game_state.dart';
+import '../models/movement_checkpoint.dart';
 import '../models/offline_reward.dart';
 import '../models/slot_kind.dart';
 import '../models/upgrade_slot.dart';
 import '../services/game_storage.dart';
 import '../services/location_service.dart';
+import '../services/monetization_service.dart';
 import '../services/movement_reward_calculator.dart';
 import '../widgets/bottom_actions.dart';
 import '../widgets/decoration_panel.dart';
 import '../widgets/game_header.dart';
 import '../widgets/movement_bonus_sheet.dart';
 import '../widgets/offline_reward_sheet.dart';
+import '../widgets/shop_sheet.dart';
 import '../widgets/status_panel.dart';
 import '../widgets/train_cabin.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({
     this.locationService = const GeolocatorLocationService(),
+    this.monetizationService = const FakeMonetizationService(),
     super.key,
   });
 
   final LocationService locationService;
+  final MonetizationService monetizationService;
 
   @override
   State<GameScreen> createState() => _GameScreenState();
@@ -39,6 +44,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   Timer? _saveTimer;
   String? _toast;
   bool _locationBusy = false;
+  bool _monetizationBusy = false;
 
   @override
   void initState() {
@@ -110,18 +116,27 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     await _storage.save(saveState);
   }
 
-  void _claimOfflineGold({required bool doubled}) {
+  Future<void> _claimOfflineGold({required bool doubled}) async {
     final current = _state;
     if (current == null || current.pendingOfflineGold <= 0) {
       return;
     }
 
-    final reward = current.pendingOfflineGold * (doubled ? 2 : 1);
+    if (doubled) {
+      await _runRewardedAd(AdPlacement.offlineDouble);
+    }
+
+    final latest = _state;
+    if (latest == null || latest.pendingOfflineGold <= 0) {
+      return;
+    }
+
+    final reward = latest.pendingOfflineGold * (doubled ? 2 : 1);
     setState(() {
-      _state = current.copyWith(
-        gold: current.gold + reward,
+      _state = latest.copyWith(
+        gold: latest.gold + reward,
         pendingOfflineGold: 0,
-        offlineReward: _emptyOfflineReward(current.offlineReward),
+        offlineReward: _emptyOfflineReward(latest.offlineReward),
         lastSavedAt: DateTime.now(),
       );
       _toast = doubled ? '광고 정산 테스트: 보상 2배!' : '오프라인 보상 수금 완료';
@@ -333,6 +348,160 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     );
   }
 
+  void _openShopSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final current = _state;
+            if (current == null) {
+              return const SizedBox.shrink();
+            }
+
+            return ShopSheet(
+              state: current,
+              monetizationBusy: _monetizationBusy,
+              onClaimSupportAd: () async {
+                final future = _claimSupportAdReward();
+                setModalState(() {});
+                await future;
+                setModalState(() {});
+              },
+              onPurchaseVipPass: () async {
+                final future = _purchaseVipPass();
+                setModalState(() {});
+                await future;
+                setModalState(() {});
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _claimSupportAdReward() async {
+    final current = _state;
+    if (current == null || _monetizationBusy) {
+      return;
+    }
+
+    final reward = await _runRewardedAd(AdPlacement.supportGrant);
+    if (reward == null) {
+      return;
+    }
+
+    final latest = _state;
+    if (latest == null) {
+      return;
+    }
+
+    setState(() {
+      _state = latest.copyWith(gold: latest.gold + reward.gold);
+      _toast = '긴급 지원금 지급: +${reward.gold} G';
+    });
+    _save();
+  }
+
+  Future<AdReward?> _runRewardedAd(AdPlacement placement) async {
+    final current = _state;
+    if (current == null || _monetizationBusy) {
+      return null;
+    }
+
+    if (current.monetization.adsRemoved) {
+      setState(() {
+        _state = current.copyWith(
+          monetization: current.monetization.copyWith(
+            rewardedAdsWatched: current.monetization.rewardedAdsWatched + 1,
+          ),
+        );
+      });
+      return AdReward(
+        placement: placement,
+        gold: placement == AdPlacement.supportGrant
+            ? BalanceConfig.adGrantGold
+            : 0,
+        message: 'VIP 광고 스킵',
+      );
+    }
+
+    setState(() {
+      _monetizationBusy = true;
+      _toast = '광고 테스트 재생 중...';
+    });
+
+    try {
+      final reward = await widget.monetizationService.showRewardedAd(placement);
+      if (!mounted) {
+        return null;
+      }
+
+      final latest = _state;
+      if (latest == null) {
+        return null;
+      }
+
+      setState(() {
+        _state = latest.copyWith(
+          monetization: latest.monetization.copyWith(
+            rewardedAdsWatched: latest.monetization.rewardedAdsWatched + 1,
+          ),
+        );
+        _toast = reward.message;
+      });
+      return reward;
+    } finally {
+      if (mounted) {
+        setState(() => _monetizationBusy = false);
+      }
+    }
+  }
+
+  Future<void> _purchaseVipPass() async {
+    final current = _state;
+    if (current == null ||
+        _monetizationBusy ||
+        current.monetization.vipPassActive) {
+      return;
+    }
+
+    setState(() {
+      _monetizationBusy = true;
+      _toast = 'VIP 패스 결제 테스트 중...';
+    });
+
+    try {
+      final purchased = await widget.monetizationService.purchaseVipPass();
+      if (!mounted || !purchased) {
+        return;
+      }
+
+      final latest = _state;
+      if (latest == null) {
+        return;
+      }
+
+      setState(() {
+        _state = latest.copyWith(
+          monetization: latest.monetization.copyWith(
+            vipPassActive: true,
+            adsRemoved: true,
+          ),
+        );
+        _toast = 'VIP 패스 활성화 완료';
+      });
+      _save();
+    } finally {
+      if (mounted) {
+        setState(() => _monetizationBusy = false);
+      }
+    }
+  }
+
   Future<void> _settleGpsMove() async {
     final current = _state;
     if (current == null || _locationBusy) {
@@ -433,12 +602,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     _save();
   }
 
-  void _showComingSoon(String feature) {
-    setState(() {
-      _toast = '$feature은 다음 단계에서 열립니다';
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = _state;
@@ -454,7 +617,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                 onOpenDecorations: _openDecorationPanel,
                 onToggleFocusBoost: _toggleFocusBoost,
                 onOpenMovementBonus: _openMovementBonusSheet,
-                onShowComingSoon: _showComingSoon,
+                onOpenShop: _openShopSheet,
               ),
       ),
     );
@@ -469,7 +632,7 @@ class _GameContent extends StatelessWidget {
     required this.onOpenDecorations,
     required this.onToggleFocusBoost,
     required this.onOpenMovementBonus,
-    required this.onShowComingSoon,
+    required this.onOpenShop,
   });
 
   final GameState state;
@@ -478,7 +641,7 @@ class _GameContent extends StatelessWidget {
   final VoidCallback onOpenDecorations;
   final ValueChanged<bool> onToggleFocusBoost;
   final VoidCallback onOpenMovementBonus;
-  final ValueChanged<String> onShowComingSoon;
+  final VoidCallback onOpenShop;
 
   @override
   Widget build(BuildContext context) {
@@ -517,7 +680,7 @@ class _GameContent extends StatelessWidget {
                       toast: toast,
                       onCabin: () {},
                       onMove: onOpenMovementBonus,
-                      onShop: () => onShowComingSoon('상점'),
+                      onShop: onOpenShop,
                     ),
                   ],
                 ),

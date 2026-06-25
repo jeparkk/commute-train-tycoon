@@ -2,6 +2,7 @@ import '../data/balance_config.dart';
 import 'decoration.dart';
 import 'movement_checkpoint.dart';
 import 'movement_report.dart';
+import 'monetization_state.dart';
 import 'offline_reward.dart';
 import 'slot_kind.dart';
 import 'upgrade_slot.dart';
@@ -17,6 +18,7 @@ class GameState {
     required this.offlineReward,
     required this.movementCheckpoint,
     required this.lastMovementReport,
+    required this.monetization,
     required this.focusBoostEnabled,
   });
 
@@ -48,6 +50,7 @@ class GameState {
       ),
       movementCheckpoint: const MovementCheckpoint.empty(),
       lastMovementReport: const MovementReport.empty(),
+      monetization: const MonetizationState.initial(),
       focusBoostEnabled: true,
     );
   }
@@ -61,6 +64,7 @@ class GameState {
   final OfflineReward offlineReward;
   final MovementCheckpoint movementCheckpoint;
   final MovementReport lastMovementReport;
+  final MonetizationState monetization;
   final bool focusBoostEnabled;
 
   double get baseIncomePerSecond {
@@ -111,6 +115,7 @@ class GameState {
     OfflineReward? offlineReward,
     MovementCheckpoint? movementCheckpoint,
     MovementReport? lastMovementReport,
+    MonetizationState? monetization,
     bool? focusBoostEnabled,
   }) {
     return GameState(
@@ -123,6 +128,7 @@ class GameState {
       offlineReward: offlineReward ?? this.offlineReward,
       movementCheckpoint: movementCheckpoint ?? this.movementCheckpoint,
       lastMovementReport: lastMovementReport ?? this.lastMovementReport,
+      monetization: monetization ?? this.monetization,
       focusBoostEnabled: focusBoostEnabled ?? this.focusBoostEnabled,
     );
   }
