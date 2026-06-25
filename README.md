@@ -1,17 +1,55 @@
-# commute_train_tycoon
+# Commute Train Tycoon
 
-A new Flutter project.
+Flutter MVP for a simple idle train game where players earn gold, upgrade a train cabin, and buy decorations that are automatically placed in fixed slots.
 
-## Getting Started
+## Current MVP
 
-This project is a starting point for a Flutter application.
+- Gold increases every second.
+- Seat and kiosk slots can be upgraded with gold.
+- Decoration management supports buying, fixed-slot placement, and upgrades.
+- Offline reward calculation is implemented with local persistence.
+- A temporary move reward stub is available from the bottom navigation.
 
-A few resources to get you started if this is your first Flutter project:
+## Recommended Local Path
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+Use an ASCII-only path for Android/Gradle stability on Windows:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```powershell
+C:\Projects\commute_train_tycoon
+```
+
+The old OneDrive path can remain as a backup, but active development should happen in this folder.
+
+## Run
+
+```powershell
+& "C:\src\flutter\bin\flutter.bat" pub get
+& "C:\src\flutter\bin\flutter.bat" run
+```
+
+## Validate
+
+```powershell
+& "C:\src\flutter\bin\dart.bat" analyze
+& "C:\src\flutter\bin\flutter.bat" test
+& "C:\src\flutter\bin\flutter.bat" build apk --debug
+```
+
+## Code Layout
+
+```text
+lib/
+  main.dart
+  src/
+    app.dart
+    features/
+      game/
+        models/
+        screens/
+        services/
+        widgets/
+```
+
+## Next Suggested Step
+
+Step 2: improve the current screen into a cuter 2D train-game UI while keeping the fixed-slot interaction model.
