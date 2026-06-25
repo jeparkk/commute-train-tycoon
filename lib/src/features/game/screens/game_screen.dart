@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../models/decoration.dart';
 import '../models/game_state.dart';
 import '../models/slot_kind.dart';
+import '../models/upgrade_slot.dart';
 import '../services/game_storage.dart';
 import '../widgets/bottom_actions.dart';
 import '../widgets/decoration_panel.dart';
@@ -124,13 +125,13 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       return;
     }
 
-    final nextSlots = Map<SlotKind, dynamic>.of(current.slots);
+    final nextSlots = Map<SlotKind, UpgradeSlot>.of(current.slots);
     nextSlots[kind] = slot.levelUp();
 
     setState(() {
       _state = current.copyWith(
         gold: current.gold - slot.nextCost,
-        slots: nextSlots.cast(),
+        slots: nextSlots,
       );
       _toast = '${slot.kind.label} Lv.${slot.level + 1} 업그레이드!';
     });
@@ -261,7 +262,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
   void _showComingSoon(String feature) {
     setState(() {
-      _toast = '$feature은 2차 MVP에서 열립니다';
+      _toast = '$feature은 다음 단계에서 열립니다';
     });
   }
 
@@ -311,47 +312,57 @@ class _GameContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  GameHeader(state: state),
-                  const SizedBox(height: 14),
-                  StatusPanel(
-                    state: state,
-                    onToggleFocusBoost: onToggleFocusBoost,
-                  ),
-                  const SizedBox(height: 14),
-                  if (state.pendingOfflineGold > 0)
-                    OfflinePanel(
-                      reward: state.pendingOfflineGold,
-                      onClaimOfflineGold: onClaimOfflineGold,
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFF2E7D4), Color(0xFFEAF5F2)],
+        ),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    GameHeader(state: state),
+                    const SizedBox(height: 12),
+                    StatusPanel(
+                      state: state,
+                      onToggleFocusBoost: onToggleFocusBoost,
                     ),
-                  if (state.pendingOfflineGold > 0) const SizedBox(height: 14),
-                  TrainCabin(
-                    state: state,
-                    onUpgrade: onUpgrade,
-                    onOpenDecorations: onOpenDecorations,
-                  ),
-                  const SizedBox(height: 14),
-                  BottomActions(
-                    toast: toast,
-                    onCabin: () {},
-                    onMove: onClaimWarpStubReward,
-                    onShop: () => onShowComingSoon('상점'),
-                  ),
-                ],
+                    const SizedBox(height: 12),
+                    if (state.pendingOfflineGold > 0)
+                      OfflinePanel(
+                        reward: state.pendingOfflineGold,
+                        onClaimOfflineGold: onClaimOfflineGold,
+                      ),
+                    if (state.pendingOfflineGold > 0)
+                      const SizedBox(height: 12),
+                    TrainCabin(
+                      state: state,
+                      onUpgrade: onUpgrade,
+                      onOpenDecorations: onOpenDecorations,
+                    ),
+                    const SizedBox(height: 12),
+                    BottomActions(
+                      toast: toast,
+                      onCabin: () {},
+                      onMove: onClaimWarpStubReward,
+                      onShop: () => onShowComingSoon('상점'),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }

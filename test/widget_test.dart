@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  testWidgets('shows the first playable train cabin', (tester) async {
+  testWidgets('shows the polished train cabin', (tester) async {
     SharedPreferences.setMockInitialValues({});
 
     await tester.pumpWidget(const CommuteTrainTycoonApp());
@@ -14,6 +14,7 @@ void main() {
     expect(find.text('좌석 Lv.1'), findsOneWidget);
     expect(find.text('매점 Lv.1'), findsOneWidget);
     expect(find.text('장식 관리'), findsOneWidget);
+    expect(find.text('COMMUTE EXPRESS'), findsOneWidget);
     expect(find.byIcon(Icons.train_rounded), findsOneWidget);
   });
 
