@@ -75,6 +75,16 @@ lib/src/features/game/data/balance_config.dart
 
 Adjust that file when tuning early progression.
 
+## Product Direction
+
+The next phase is focused on making the prototype feel like a real cute 2D train game, not just a functional UI mock.
+
+See:
+
+```text
+docs/game-feel-development-plan.md
+```
+
 ## Next Suggested Step
 
-Step 5: improve the offline reward popup and settlement experience.
+Step 9: rebuild the main cabin screen as a real 2D train cabin scene.
