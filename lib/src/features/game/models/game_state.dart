@@ -1,5 +1,6 @@
 import '../data/balance_config.dart';
 import 'decoration.dart';
+import 'movement_checkpoint.dart';
 import 'movement_report.dart';
 import 'offline_reward.dart';
 import 'slot_kind.dart';
@@ -14,6 +15,7 @@ class GameState {
     required this.lastSavedAt,
     required this.pendingOfflineGold,
     required this.offlineReward,
+    required this.movementCheckpoint,
     required this.lastMovementReport,
     required this.focusBoostEnabled,
   });
@@ -44,6 +46,7 @@ class GameState {
         maxDuration: BalanceConfig.maxOfflineDuration,
         efficiency: BalanceConfig.offlineEfficiency,
       ),
+      movementCheckpoint: const MovementCheckpoint.empty(),
       lastMovementReport: const MovementReport.empty(),
       focusBoostEnabled: true,
     );
@@ -56,6 +59,7 @@ class GameState {
   final DateTime lastSavedAt;
   final int pendingOfflineGold;
   final OfflineReward offlineReward;
+  final MovementCheckpoint movementCheckpoint;
   final MovementReport lastMovementReport;
   final bool focusBoostEnabled;
 
@@ -105,6 +109,7 @@ class GameState {
     DateTime? lastSavedAt,
     int? pendingOfflineGold,
     OfflineReward? offlineReward,
+    MovementCheckpoint? movementCheckpoint,
     MovementReport? lastMovementReport,
     bool? focusBoostEnabled,
   }) {
@@ -116,6 +121,7 @@ class GameState {
       lastSavedAt: lastSavedAt ?? this.lastSavedAt,
       pendingOfflineGold: pendingOfflineGold ?? this.pendingOfflineGold,
       offlineReward: offlineReward ?? this.offlineReward,
+      movementCheckpoint: movementCheckpoint ?? this.movementCheckpoint,
       lastMovementReport: lastMovementReport ?? this.lastMovementReport,
       focusBoostEnabled: focusBoostEnabled ?? this.focusBoostEnabled,
     );

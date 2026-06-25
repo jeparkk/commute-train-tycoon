@@ -5,6 +5,10 @@ class MovementReport {
     required this.gold,
     required this.warpPoints,
     required this.multiplier,
+    required this.fromLatitude,
+    required this.fromLongitude,
+    required this.toLatitude,
+    required this.toLongitude,
     required this.settledAt,
     required this.source,
   });
@@ -15,6 +19,10 @@ class MovementReport {
       gold = 0,
       warpPoints = 0,
       multiplier = 1,
+      fromLatitude = null,
+      fromLongitude = null,
+      toLatitude = null,
+      toLongitude = null,
       settledAt = null,
       source = MovementRewardSource.none;
 
@@ -23,6 +31,10 @@ class MovementReport {
   final int gold;
   final int warpPoints;
   final double multiplier;
+  final double? fromLatitude;
+  final double? fromLongitude;
+  final double? toLatitude;
+  final double? toLongitude;
   final DateTime? settledAt;
   final MovementRewardSource source;
 

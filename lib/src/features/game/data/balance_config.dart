@@ -17,6 +17,7 @@ class BalanceConfig {
   static const movementGoldPerKm = 18;
   static const movementWarpPointsPerKm = 12;
   static const movementScreenOnMultiplier = 2.0;
+  static const minimumMovementRewardKm = 0.05;
 
   static const slots = {
     SlotKind.seat: SlotBalance(

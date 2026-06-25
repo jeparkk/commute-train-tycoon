@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/decoration.dart';
 import '../models/game_state.dart';
+import '../models/movement_checkpoint.dart';
 import '../models/movement_report.dart';
 import '../models/offline_reward.dart';
 import '../models/slot_kind.dart';
@@ -22,6 +23,13 @@ class GameStorage {
   static const _lastMoveMultiplierKey = 'lastMoveMultiplier';
   static const _lastMoveSettledAtKey = 'lastMoveSettledAt';
   static const _lastMoveSourceKey = 'lastMoveSource';
+  static const _lastMoveFromLatKey = 'lastMoveFromLat';
+  static const _lastMoveFromLngKey = 'lastMoveFromLng';
+  static const _lastMoveToLatKey = 'lastMoveToLat';
+  static const _lastMoveToLngKey = 'lastMoveToLng';
+  static const _movementCheckpointLatKey = 'movementCheckpointLat';
+  static const _movementCheckpointLngKey = 'movementCheckpointLng';
+  static const _movementCheckpointAtKey = 'movementCheckpointAt';
 
   static String _levelKey(SlotKind kind) => '${kind.name}Level';
   static String _decorationItemKey(DecorationSlotKind kind) =>
@@ -65,6 +73,7 @@ class GameStorage {
       slots: slots,
       decorations: decorations,
       lastSavedAt: lastSavedAt,
+      movementCheckpoint: _loadMovementCheckpoint(prefs),
       lastMovementReport: _loadMovementReport(prefs),
       focusBoostEnabled: focusBoostEnabled,
     );
@@ -117,6 +126,7 @@ class GameStorage {
     }
 
     await _saveMovementReport(prefs, state.lastMovementReport);
+    await _saveMovementCheckpoint(prefs, state.movementCheckpoint);
   }
 
   PlacedDecoration? _loadDecoration(
@@ -157,6 +167,10 @@ class GameStorage {
       gold: prefs.getInt(_lastMoveGoldKey) ?? 0,
       warpPoints: prefs.getInt(_lastMoveWarpPointsKey) ?? 0,
       multiplier: prefs.getDouble(_lastMoveMultiplierKey) ?? 1,
+      fromLatitude: prefs.getDouble(_lastMoveFromLatKey),
+      fromLongitude: prefs.getDouble(_lastMoveFromLngKey),
+      toLatitude: prefs.getDouble(_lastMoveToLatKey),
+      toLongitude: prefs.getDouble(_lastMoveToLngKey),
       settledAt: DateTime.fromMillisecondsSinceEpoch(settledAtMillis),
       source: source,
     );
@@ -174,6 +188,10 @@ class GameStorage {
       await prefs.remove(_lastMoveMultiplierKey);
       await prefs.remove(_lastMoveSettledAtKey);
       await prefs.remove(_lastMoveSourceKey);
+      await prefs.remove(_lastMoveFromLatKey);
+      await prefs.remove(_lastMoveFromLngKey);
+      await prefs.remove(_lastMoveToLatKey);
+      await prefs.remove(_lastMoveToLngKey);
       return;
     }
 
@@ -187,5 +205,56 @@ class GameStorage {
       report.settledAt!.millisecondsSinceEpoch,
     );
     await prefs.setString(_lastMoveSourceKey, report.source.name);
+    await _setNullableDouble(prefs, _lastMoveFromLatKey, report.fromLatitude);
+    await _setNullableDouble(prefs, _lastMoveFromLngKey, report.fromLongitude);
+    await _setNullableDouble(prefs, _lastMoveToLatKey, report.toLatitude);
+    await _setNullableDouble(prefs, _lastMoveToLngKey, report.toLongitude);
+  }
+
+  MovementCheckpoint _loadMovementCheckpoint(SharedPreferences prefs) {
+    final latitude = prefs.getDouble(_movementCheckpointLatKey);
+    final longitude = prefs.getDouble(_movementCheckpointLngKey);
+    final recordedAtMillis = prefs.getInt(_movementCheckpointAtKey);
+    if (latitude == null || longitude == null || recordedAtMillis == null) {
+      return const MovementCheckpoint.empty();
+    }
+
+    return MovementCheckpoint(
+      latitude: latitude,
+      longitude: longitude,
+      recordedAt: DateTime.fromMillisecondsSinceEpoch(recordedAtMillis),
+    );
+  }
+
+  Future<void> _saveMovementCheckpoint(
+    SharedPreferences prefs,
+    MovementCheckpoint checkpoint,
+  ) async {
+    if (!checkpoint.hasLocation) {
+      await prefs.remove(_movementCheckpointLatKey);
+      await prefs.remove(_movementCheckpointLngKey);
+      await prefs.remove(_movementCheckpointAtKey);
+      return;
+    }
+
+    await prefs.setDouble(_movementCheckpointLatKey, checkpoint.latitude!);
+    await prefs.setDouble(_movementCheckpointLngKey, checkpoint.longitude!);
+    await prefs.setInt(
+      _movementCheckpointAtKey,
+      checkpoint.recordedAt!.millisecondsSinceEpoch,
+    );
+  }
+
+  Future<void> _setNullableDouble(
+    SharedPreferences prefs,
+    String key,
+    double? value,
+  ) async {
+    if (value == null) {
+      await prefs.remove(key);
+      return;
+    }
+
+    await prefs.setDouble(key, value);
   }
 }

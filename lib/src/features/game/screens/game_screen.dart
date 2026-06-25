@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 
 import '../data/balance_config.dart';
 import '../models/decoration.dart';
+import '../models/movement_checkpoint.dart';
 import '../models/game_state.dart';
 import '../models/offline_reward.dart';
 import '../models/slot_kind.dart';
 import '../models/upgrade_slot.dart';
 import '../services/game_storage.dart';
+import '../services/location_service.dart';
 import '../services/movement_reward_calculator.dart';
 import '../widgets/bottom_actions.dart';
 import '../widgets/decoration_panel.dart';
@@ -19,7 +21,12 @@ import '../widgets/status_panel.dart';
 import '../widgets/train_cabin.dart';
 
 class GameScreen extends StatefulWidget {
-  const GameScreen({super.key});
+  const GameScreen({
+    this.locationService = const GeolocatorLocationService(),
+    super.key,
+  });
+
+  final LocationService locationService;
 
   @override
   State<GameScreen> createState() => _GameScreenState();
@@ -31,6 +38,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   Timer? _incomeTimer;
   Timer? _saveTimer;
   String? _toast;
+  bool _locationBusy = false;
 
   @override
   void initState() {
@@ -307,6 +315,13 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
             return MovementBonusSheet(
               state: current,
+              locationBusy: _locationBusy,
+              onSettleGpsMove: () async {
+                final future = _settleGpsMove();
+                setModalState(() {});
+                await future;
+                setModalState(() {});
+              },
               onSettleDemoMove: () {
                 _settleDemoMove();
                 setModalState(() {});
@@ -316,6 +331,86 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         );
       },
     );
+  }
+
+  Future<void> _settleGpsMove() async {
+    final current = _state;
+    if (current == null || _locationBusy) {
+      return;
+    }
+
+    setState(() {
+      _locationBusy = true;
+      _toast = '현재 위치 확인 중...';
+    });
+
+    try {
+      final location = await widget.locationService.getCurrentLocation();
+      if (!mounted) {
+        return;
+      }
+
+      final nextCheckpoint = MovementCheckpoint(
+        latitude: location.latitude,
+        longitude: location.longitude,
+        recordedAt: location.capturedAt,
+      );
+
+      final latest = _state;
+      if (latest == null) {
+        return;
+      }
+
+      if (!latest.movementCheckpoint.hasLocation) {
+        setState(() {
+          _state = latest.copyWith(movementCheckpoint: nextCheckpoint);
+          _toast = '기준 위치 저장 완료. 다음 이동부터 보상이 정산됩니다';
+        });
+        await _save();
+        return;
+      }
+
+      final checkpoint = latest.movementCheckpoint;
+      final distanceMeters = widget.locationService.distanceBetweenMeters(
+        startLatitude: checkpoint.latitude!,
+        startLongitude: checkpoint.longitude!,
+        endLatitude: location.latitude,
+        endLongitude: location.longitude,
+      );
+      final report = MovementRewardCalculator.fromCheckpoint(
+        checkpoint: checkpoint,
+        currentLocation: location,
+        distanceKm: distanceMeters / 1000,
+        screenOnBoost: latest.focusBoostEnabled,
+      );
+
+      setState(() {
+        _state = latest.copyWith(
+          gold: latest.gold + report.gold,
+          warpPoints: latest.warpPoints + report.warpPoints,
+          movementCheckpoint: nextCheckpoint,
+          lastMovementReport: report.hasReward
+              ? report
+              : latest.lastMovementReport,
+        );
+        _toast = report.hasReward
+            ? 'GPS 이동 정산: +${report.gold} G / +${report.warpPoints} WP'
+            : '이동 거리가 짧아 기준 위치만 갱신했습니다';
+      });
+      await _save();
+    } on LocationServiceException catch (error) {
+      if (mounted) {
+        setState(() => _toast = error.message);
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _toast = '현재 위치를 가져오지 못했습니다');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _locationBusy = false);
+      }
+    }
   }
 
   void _settleDemoMove() {

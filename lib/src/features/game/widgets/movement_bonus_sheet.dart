@@ -6,11 +6,15 @@ import '../models/movement_report.dart';
 class MovementBonusSheet extends StatelessWidget {
   const MovementBonusSheet({
     required this.state,
+    required this.locationBusy,
+    required this.onSettleGpsMove,
     required this.onSettleDemoMove,
     super.key,
   });
 
   final GameState state;
+  final bool locationBusy;
+  final VoidCallback onSettleGpsMove;
   final VoidCallback onSettleDemoMove;
 
   @override
@@ -96,13 +100,21 @@ class MovementBonusSheet extends StatelessWidget {
                       const _MovementMetaRow(
                         icon: Icons.route_rounded,
                         label: '정산 방식',
-                        value: 'GPS 준비 중',
+                        value: '실제 GPS',
                       ),
                       const SizedBox(height: 8),
                       _MovementMetaRow(
                         icon: Icons.speed_rounded,
                         label: '화면 ON 배속',
                         value: state.focusBoostEnabled ? '2배 적용' : '기본',
+                      ),
+                      const SizedBox(height: 8),
+                      _MovementMetaRow(
+                        icon: Icons.my_location_rounded,
+                        label: '기준 위치',
+                        value: state.movementCheckpoint.hasLocation
+                            ? '저장됨'
+                            : '필요',
                       ),
                       const SizedBox(height: 8),
                       _MovementMetaRow(
@@ -120,6 +132,17 @@ class MovementBonusSheet extends StatelessWidget {
               else
                 const _EmptyReportCard(),
               const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: locationBusy ? null : onSettleGpsMove,
+                icon: locationBusy
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.my_location_rounded),
+                label: Text(locationBusy ? '위치 확인 중' : '현재 위치 정산'),
+              ),
+              const SizedBox(height: 8),
               FilledButton.icon(
                 onPressed: onSettleDemoMove,
                 icon: const Icon(Icons.directions_train_rounded),
