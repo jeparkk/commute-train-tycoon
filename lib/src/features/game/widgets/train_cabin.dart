@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/assets/game_asset.dart';
+import '../../../core/widgets/asset_sprite.dart';
 import '../models/game_state.dart';
 import '../models/slot_kind.dart';
 import '../models/upgrade_slot.dart';
@@ -181,6 +183,7 @@ class _UpgradeObject extends StatelessWidget {
 
     return _CabinObjectButton(
       color: slot.kind.color,
+      assetKey: GameAssets.slotLevelKey(slot.kind.assetId, slot.level),
       icon: slot.kind.icon,
       title: '${slot.kind.label} Lv.${slot.level}',
       subtitle: '+${slot.incomePerSecond.toStringAsFixed(1)} G/s',
@@ -201,6 +204,7 @@ class _DecorationObject extends StatelessWidget {
   Widget build(BuildContext context) {
     return _CabinObjectButton(
       color: const Color(0xFF7A9D54),
+      assetKey: 'decor_manager',
       icon: Icons.local_florist_rounded,
       title: '장식 관리',
       subtitle: '배치 ${state.placedDecorationCount}/3',
@@ -215,6 +219,7 @@ class _DecorationObject extends StatelessWidget {
 class _CabinObjectButton extends StatelessWidget {
   const _CabinObjectButton({
     required this.color,
+    required this.assetKey,
     required this.icon,
     required this.title,
     required this.subtitle,
@@ -225,6 +230,7 @@ class _CabinObjectButton extends StatelessWidget {
   });
 
   final Color color;
+  final String assetKey;
   final IconData icon;
   final String title;
   final String subtitle;
@@ -263,7 +269,7 @@ class _CabinObjectButton extends StatelessWidget {
     );
 
     final content = [
-      _ObjectSprite(color: color, icon: icon),
+      _ObjectSprite(color: color, icon: icon, assetKey: assetKey),
       SizedBox(width: horizontal ? 12 : 0, height: horizontal ? 0 : 8),
       if (horizontal) Expanded(child: details) else details,
       SizedBox(width: horizontal ? 10 : 0, height: horizontal ? 0 : 8),
@@ -321,10 +327,15 @@ class _CabinObjectButton extends StatelessWidget {
 }
 
 class _ObjectSprite extends StatelessWidget {
-  const _ObjectSprite({required this.color, required this.icon});
+  const _ObjectSprite({
+    required this.color,
+    required this.icon,
+    required this.assetKey,
+  });
 
   final Color color;
   final IconData icon;
+  final String assetKey;
 
   @override
   Widget build(BuildContext context) {
@@ -344,11 +355,15 @@ class _ObjectSprite extends StatelessWidget {
           width: 58,
           height: 58,
           decoration: BoxDecoration(
-            color: color,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.white, width: 3),
           ),
-          child: Icon(icon, color: Colors.white, size: 32),
+          child: AssetSprite(
+            assetKey: assetKey,
+            fallbackIcon: icon,
+            fallbackColor: color,
+            size: 58,
+          ),
         ),
       ],
     );

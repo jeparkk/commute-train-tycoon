@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/assets/game_asset.dart';
+import '../../../core/widgets/asset_sprite.dart';
 import '../models/decoration.dart';
 import '../models/game_state.dart';
 import 'currency_pill.dart';
@@ -218,7 +220,7 @@ class _PlacedDecorationRow extends StatelessWidget {
 
     return Row(
       children: [
-        _DecorationIcon(item: item),
+        _DecorationIcon(item: item, level: placed.level),
         const SizedBox(width: 10),
         Expanded(
           child: Column(
@@ -249,21 +251,27 @@ class _PlacedDecorationRow extends StatelessWidget {
 }
 
 class _DecorationIcon extends StatelessWidget {
-  const _DecorationIcon({required this.item});
+  const _DecorationIcon({required this.item, this.level = 1});
 
   final DecorationItem item;
+  final int level;
 
   @override
   Widget build(BuildContext context) {
+    final assetKey = GameAssets.decorationLevelKey(item.assetId, level);
+
     return Container(
-      width: 46,
-      height: 46,
+      padding: const EdgeInsets.all(1),
       decoration: BoxDecoration(
-        color: item.color,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white, width: 2),
+        color: Colors.white,
       ),
-      child: Icon(item.icon, color: Colors.white),
+      child: AssetSprite(
+        assetKey: assetKey,
+        fallbackIcon: item.icon,
+        fallbackColor: item.color,
+        size: 46,
+      ),
     );
   }
 }

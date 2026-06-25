@@ -41,6 +41,9 @@ The old OneDrive path can remain as a backup, but active development should happ
 lib/
   main.dart
   src/
+    core/
+      assets/
+      widgets/
     app.dart
     features/
       game/
@@ -50,6 +53,18 @@ lib/
         widgets/
 ```
 
+## Asset Pipeline
+
+Image paths are registered in `lib/src/core/assets/game_asset.dart`.
+
+The app currently uses icon fallbacks, so it still runs without final PNG assets. To replace a fallback:
+
+1. Add a transparent PNG to `assets/images/...`.
+2. Match the file path registered in `GameAssets`.
+3. Change that asset entry's `available` value to `true`.
+
+See `assets/images/README.md` for file naming examples.
+
 ## Next Suggested Step
 
-Step 2: improve the current screen into a cuter 2D train-game UI while keeping the fixed-slot interaction model.
+Step 4: move cost, income, and upgrade balance values out of widget code and into dedicated data definitions.

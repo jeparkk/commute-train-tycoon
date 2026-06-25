@@ -18,6 +18,7 @@ class DecorationItem {
     required this.id,
     required this.slotKind,
     required this.name,
+    required this.assetId,
     required this.icon,
     required this.color,
     required this.baseCost,
@@ -28,6 +29,7 @@ class DecorationItem {
   final String id;
   final DecorationSlotKind slotKind;
   final String name;
+  final String assetId;
   final IconData icon;
   final Color color;
   final int baseCost;
@@ -56,6 +58,7 @@ class DecorationCatalog {
       id: 'tiny_plant',
       slotKind: DecorationSlotKind.window,
       name: '작은 화분',
+      assetId: 'tiny_plant',
       icon: Icons.local_florist_rounded,
       color: Color(0xFF7A9D54),
       baseCost: 140,
@@ -66,6 +69,7 @@ class DecorationCatalog {
       id: 'cat_doll',
       slotKind: DecorationSlotKind.window,
       name: '고양이 인형',
+      assetId: 'cat_doll',
       icon: Icons.pets_rounded,
       color: Color(0xFFC27B65),
       baseCost: 360,
@@ -76,6 +80,7 @@ class DecorationCatalog {
       id: 'cheer_poster',
       slotKind: DecorationSlotKind.wall,
       name: '출근 응원 포스터',
+      assetId: 'cheer_poster',
       icon: Icons.campaign_rounded,
       color: Color(0xFF5F8DC7),
       baseCost: 180,
@@ -86,6 +91,7 @@ class DecorationCatalog {
       id: 'route_map',
       slotKind: DecorationSlotKind.wall,
       name: '미니 노선도',
+      assetId: 'route_map',
       icon: Icons.map_rounded,
       color: Color(0xFF7367A8),
       baseCost: 420,
@@ -96,6 +102,7 @@ class DecorationCatalog {
       id: 'soft_rug',
       slotKind: DecorationSlotKind.floor,
       name: '폭신 러그',
+      assetId: 'soft_rug',
       icon: Icons.grid_view_rounded,
       color: Color(0xFFD2A84F),
       baseCost: 220,
@@ -106,6 +113,7 @@ class DecorationCatalog {
       id: 'lost_box',
       slotKind: DecorationSlotKind.floor,
       name: '분실물 박스',
+      assetId: 'lost_box',
       icon: Icons.inventory_2_rounded,
       color: Color(0xFF4E9B8C),
       baseCost: 520,
