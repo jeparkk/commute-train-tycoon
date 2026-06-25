@@ -14,6 +14,9 @@ class BalanceConfig {
   static const appealPerSlotLevel = 12;
   static const maxOfflineDuration = Duration(hours: 6);
   static const offlineEfficiency = 0.35;
+  static const movementGoldPerKm = 18;
+  static const movementWarpPointsPerKm = 12;
+  static const movementScreenOnMultiplier = 2.0;
 
   static const slots = {
     SlotKind.seat: SlotBalance(

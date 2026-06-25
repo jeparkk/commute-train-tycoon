@@ -61,7 +61,9 @@ void main() {
     expect(find.text('작은 화분 Lv.2 업그레이드!'), findsOneWidget);
   });
 
-  testWidgets('move tab grants the warp stub reward', (tester) async {
+  testWidgets('move tab opens movement bonus flow and settles a demo commute', (
+    tester,
+  ) async {
     SharedPreferences.setMockInitialValues({});
 
     await tester.pumpWidget(const CommuteTrainTycoonApp());
@@ -70,9 +72,18 @@ void main() {
     await tester.ensureVisible(find.text('이동'));
     await tester.pump();
     await tester.tap(find.text('이동'));
-    await tester.pump();
+    await tester.pumpAndSettle();
 
-    expect(find.text('이동 보너스 스텁: +75 G'), findsOneWidget);
+    expect(find.text('이동 보너스'), findsOneWidget);
+    expect(find.text('GPS 준비 중'), findsOneWidget);
+    expect(find.text('아직 정산된 이동 기록이 없습니다.'), findsOneWidget);
+
+    await tester.tap(find.text('테스트 이동 정산'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('최근 이동 정산'), findsOneWidget);
+    expect(find.text('7.2 km'), findsOneWidget);
+    expect(find.text('이동 정산 완료: +259 G / +173 WP'), findsOneWidget);
   });
 
   testWidgets('settles offline reward with a focused bottom sheet', (

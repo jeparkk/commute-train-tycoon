@@ -1,5 +1,6 @@
 import '../data/balance_config.dart';
 import 'decoration.dart';
+import 'movement_report.dart';
 import 'offline_reward.dart';
 import 'slot_kind.dart';
 import 'upgrade_slot.dart';
@@ -7,17 +8,20 @@ import 'upgrade_slot.dart';
 class GameState {
   const GameState({
     required this.gold,
+    required this.warpPoints,
     required this.slots,
     required this.decorations,
     required this.lastSavedAt,
     required this.pendingOfflineGold,
     required this.offlineReward,
+    required this.lastMovementReport,
     required this.focusBoostEnabled,
   });
 
   factory GameState.initial(DateTime now) {
     return GameState(
       gold: BalanceConfig.startingGold,
+      warpPoints: 0,
       slots: {
         for (final entry in BalanceConfig.slots.entries)
           entry.key: UpgradeSlot(
@@ -40,16 +44,19 @@ class GameState {
         maxDuration: BalanceConfig.maxOfflineDuration,
         efficiency: BalanceConfig.offlineEfficiency,
       ),
+      lastMovementReport: const MovementReport.empty(),
       focusBoostEnabled: true,
     );
   }
 
   final double gold;
+  final int warpPoints;
   final Map<SlotKind, UpgradeSlot> slots;
   final Map<DecorationSlotKind, PlacedDecoration?> decorations;
   final DateTime lastSavedAt;
   final int pendingOfflineGold;
   final OfflineReward offlineReward;
+  final MovementReport lastMovementReport;
   final bool focusBoostEnabled;
 
   double get baseIncomePerSecond {
@@ -92,20 +99,24 @@ class GameState {
 
   GameState copyWith({
     double? gold,
+    int? warpPoints,
     Map<SlotKind, UpgradeSlot>? slots,
     Map<DecorationSlotKind, PlacedDecoration?>? decorations,
     DateTime? lastSavedAt,
     int? pendingOfflineGold,
     OfflineReward? offlineReward,
+    MovementReport? lastMovementReport,
     bool? focusBoostEnabled,
   }) {
     return GameState(
       gold: gold ?? this.gold,
+      warpPoints: warpPoints ?? this.warpPoints,
       slots: slots ?? this.slots,
       decorations: decorations ?? this.decorations,
       lastSavedAt: lastSavedAt ?? this.lastSavedAt,
       pendingOfflineGold: pendingOfflineGold ?? this.pendingOfflineGold,
       offlineReward: offlineReward ?? this.offlineReward,
+      lastMovementReport: lastMovementReport ?? this.lastMovementReport,
       focusBoostEnabled: focusBoostEnabled ?? this.focusBoostEnabled,
     );
   }

@@ -9,9 +9,11 @@ import '../models/offline_reward.dart';
 import '../models/slot_kind.dart';
 import '../models/upgrade_slot.dart';
 import '../services/game_storage.dart';
+import '../services/movement_reward_calculator.dart';
 import '../widgets/bottom_actions.dart';
 import '../widgets/decoration_panel.dart';
 import '../widgets/game_header.dart';
+import '../widgets/movement_bonus_sheet.dart';
 import '../widgets/offline_reward_sheet.dart';
 import '../widgets/status_panel.dart';
 import '../widgets/train_cabin.dart';
@@ -290,16 +292,48 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     _save();
   }
 
-  void _claimWarpStubReward() {
+  void _openMovementBonusSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final current = _state;
+            if (current == null) {
+              return const SizedBox.shrink();
+            }
+
+            return MovementBonusSheet(
+              state: current,
+              onSettleDemoMove: () {
+                _settleDemoMove();
+                setModalState(() {});
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _settleDemoMove() {
     final current = _state;
     if (current == null) {
       return;
     }
 
-    const reward = 75;
+    final report = MovementRewardCalculator.demoCommute(
+      screenOnBoost: current.focusBoostEnabled,
+    );
     setState(() {
-      _state = current.copyWith(gold: current.gold + reward);
-      _toast = '이동 보너스 스텁: +$reward G';
+      _state = current.copyWith(
+        gold: current.gold + report.gold,
+        warpPoints: current.warpPoints + report.warpPoints,
+        lastMovementReport: report,
+      );
+      _toast = '이동 정산 완료: +${report.gold} G / +${report.warpPoints} WP';
     });
     _save();
   }
@@ -324,7 +358,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                 onUpgrade: _upgrade,
                 onOpenDecorations: _openDecorationPanel,
                 onToggleFocusBoost: _toggleFocusBoost,
-                onClaimWarpStubReward: _claimWarpStubReward,
+                onOpenMovementBonus: _openMovementBonusSheet,
                 onShowComingSoon: _showComingSoon,
               ),
       ),
@@ -339,7 +373,7 @@ class _GameContent extends StatelessWidget {
     required this.onUpgrade,
     required this.onOpenDecorations,
     required this.onToggleFocusBoost,
-    required this.onClaimWarpStubReward,
+    required this.onOpenMovementBonus,
     required this.onShowComingSoon,
   });
 
@@ -348,7 +382,7 @@ class _GameContent extends StatelessWidget {
   final ValueChanged<SlotKind> onUpgrade;
   final VoidCallback onOpenDecorations;
   final ValueChanged<bool> onToggleFocusBoost;
-  final VoidCallback onClaimWarpStubReward;
+  final VoidCallback onOpenMovementBonus;
   final ValueChanged<String> onShowComingSoon;
 
   @override
@@ -387,7 +421,7 @@ class _GameContent extends StatelessWidget {
                     BottomActions(
                       toast: toast,
                       onCabin: () {},
-                      onMove: onClaimWarpStubReward,
+                      onMove: onOpenMovementBonus,
                       onShop: () => onShowComingSoon('상점'),
                     ),
                   ],
