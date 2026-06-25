@@ -1,3 +1,4 @@
+import '../data/balance_config.dart';
 import 'decoration.dart';
 import 'slot_kind.dart';
 import 'upgrade_slot.dart';
@@ -14,20 +15,15 @@ class GameState {
 
   factory GameState.initial(DateTime now) {
     return GameState(
-      gold: 180,
-      slots: const {
-        SlotKind.seat: UpgradeSlot(
-          kind: SlotKind.seat,
-          level: 1,
-          baseCost: 80,
-          baseIncome: 0.8,
-        ),
-        SlotKind.kiosk: UpgradeSlot(
-          kind: SlotKind.kiosk,
-          level: 1,
-          baseCost: 120,
-          baseIncome: 1.1,
-        ),
+      gold: BalanceConfig.startingGold,
+      slots: {
+        for (final entry in BalanceConfig.slots.entries)
+          entry.key: UpgradeSlot(
+            kind: entry.value.kind,
+            level: 1,
+            baseCost: entry.value.baseCost,
+            baseIncome: entry.value.baseIncome,
+          ),
       },
       decorations: const {
         DecorationSlotKind.window: null,
@@ -69,7 +65,7 @@ class GameState {
   int get trainAppeal {
     final slotAppeal = slots.values.fold<int>(
       0,
-      (sum, slot) => sum + slot.level * 12,
+      (sum, slot) => sum + slot.level * BalanceConfig.appealPerSlotLevel,
     );
     final decorationAppeal = decorations.values
         .whereType<PlacedDecoration>()

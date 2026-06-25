@@ -1,4 +1,5 @@
 import 'package:commute_train_tycoon/main.dart';
+import 'package:commute_train_tycoon/src/features/game/data/balance_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -43,13 +44,17 @@ void main() {
     expect(find.text('장식 상점'), findsOneWidget);
     expect(find.text('작은 화분'), findsOneWidget);
 
-    await tester.tap(find.text('140 G'));
+    final tinyPlant = BalanceConfig.decorations.first;
+
+    await tester.tap(find.text('${tinyPlant.baseCost} G'));
     await tester.pumpAndSettle();
 
     expect(find.text('작은 화분 Lv.1'), findsOneWidget);
     expect(find.text('작은 화분 배치 완료!'), findsOneWidget);
 
-    await tester.tap(find.text('227 G'));
+    final nextCost = (tinyPlant.baseCost * BalanceConfig.decorationCostGrowth)
+        .round();
+    await tester.tap(find.text('$nextCost G'));
     await tester.pumpAndSettle();
 
     expect(find.text('작은 화분 Lv.2'), findsOneWidget);

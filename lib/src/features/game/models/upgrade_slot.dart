@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import '../data/balance_config.dart';
 import 'slot_kind.dart';
 
 class UpgradeSlot {
@@ -15,9 +16,10 @@ class UpgradeSlot {
   final int baseCost;
   final double baseIncome;
 
-  int get nextCost => (baseCost * pow(1.72, level - 1)).round();
+  int get nextCost =>
+      (baseCost * pow(BalanceConfig.slotCostGrowth, level - 1)).round();
   double get incomePerSecond => baseIncome * level;
-  bool get isMaxed => level >= 20;
+  bool get isMaxed => level >= BalanceConfig.maxSlotLevel;
 
   UpgradeSlot levelUp() {
     return UpgradeSlot(

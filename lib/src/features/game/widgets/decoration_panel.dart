@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../data/balance_config.dart';
 import '../../../core/assets/game_asset.dart';
 import '../../../core/widgets/asset_sprite.dart';
 import '../models/decoration.dart';
@@ -214,7 +215,7 @@ class _PlacedDecorationRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final item = DecorationCatalog.byId(placed.itemId);
-    final isMaxed = placed.level >= 10;
+    final isMaxed = placed.level >= BalanceConfig.maxDecorationLevel;
     final cost = item.costForLevel(placed.level);
     final affordable = gold >= cost && !isMaxed;
 

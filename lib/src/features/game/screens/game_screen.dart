@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../data/balance_config.dart';
 import '../models/decoration.dart';
 import '../models/game_state.dart';
 import '../models/slot_kind.dart';
@@ -207,7 +208,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     }
 
     final item = DecorationCatalog.byId(placed.itemId);
-    if (placed.level >= 10) {
+    if (placed.level >= BalanceConfig.maxDecorationLevel) {
       setState(() => _toast = '${item.name}은 이미 최고 레벨입니다');
       return;
     }

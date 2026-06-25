@@ -65,6 +65,16 @@ The app currently uses icon fallbacks, so it still runs without final PNG assets
 
 See `assets/images/README.md` for file naming examples.
 
+## Balance Data
+
+Cost, income, appeal, starting gold, and growth curves are defined in:
+
+```text
+lib/src/features/game/data/balance_config.dart
+```
+
+Adjust that file when tuning early progression.
+
 ## Next Suggested Step
 
-Step 4: move cost, income, and upgrade balance values out of widget code and into dedicated data definitions.
+Step 5: improve the offline reward popup and settlement experience.
