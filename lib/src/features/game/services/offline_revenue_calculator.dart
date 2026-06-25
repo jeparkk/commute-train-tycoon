@@ -1,20 +1,33 @@
 import 'dart:math';
 
+import '../data/balance_config.dart';
 import '../models/game_state.dart';
 
 class OfflineRevenueCalculator {
-  static const maxOfflineDuration = Duration(hours: 6);
-  static const offlineEfficiency = 0.35;
+  static const maxOfflineDuration = BalanceConfig.maxOfflineDuration;
+  static const offlineEfficiency = BalanceConfig.offlineEfficiency;
+
+  static Duration cappedDuration({
+    required DateTime lastSavedAt,
+    required DateTime now,
+  }) {
+    final elapsed = now.difference(lastSavedAt);
+    if (elapsed.isNegative) {
+      return Duration.zero;
+    }
+
+    return Duration(
+      seconds: min(elapsed.inSeconds, maxOfflineDuration.inSeconds),
+    );
+  }
 
   static int calculate({required GameState state, required DateTime now}) {
-    final elapsed = now.difference(state.lastSavedAt);
-    if (elapsed.isNegative || elapsed.inSeconds < 10) {
+    final capped = cappedDuration(lastSavedAt: state.lastSavedAt, now: now);
+    if (capped.inSeconds < 10) {
       return 0;
     }
 
-    final cappedSeconds = min(elapsed.inSeconds, maxOfflineDuration.inSeconds);
-
-    return (state.baseIncomePerSecond * cappedSeconds * offlineEfficiency)
+    return (state.baseIncomePerSecond * capped.inSeconds * offlineEfficiency)
         .floor();
   }
 }

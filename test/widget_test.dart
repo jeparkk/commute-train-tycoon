@@ -74,4 +74,28 @@ void main() {
 
     expect(find.text('이동 보너스 스텁: +75 G'), findsOneWidget);
   });
+
+  testWidgets('settles offline reward with a focused bottom sheet', (
+    tester,
+  ) async {
+    final lastSavedAt = DateTime.now().subtract(const Duration(hours: 2));
+    SharedPreferences.setMockInitialValues({
+      'gold': 500.0,
+      'lastSavedAt': lastSavedAt.millisecondsSinceEpoch,
+    });
+
+    await tester.pumpWidget(const CommuteTrainTycoonApp());
+    await tester.pumpAndSettle();
+
+    expect(find.text('차고지 수익 도착'), findsOneWidget);
+    expect(find.text('정산 가능 골드'), findsOneWidget);
+    expect(find.text('누적 시간'), findsOneWidget);
+    expect(find.text('방치 효율'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilledButton, '수금'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('차고지 수익 도착'), findsNothing);
+    expect(find.text('오프라인 보상 수금 완료'), findsOneWidget);
+  });
 }

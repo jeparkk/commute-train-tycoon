@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/decoration.dart';
 import '../models/game_state.dart';
+import '../models/offline_reward.dart';
 import '../models/slot_kind.dart';
 import '../models/upgrade_slot.dart';
 import 'offline_revenue_calculator.dart';
@@ -56,12 +57,26 @@ class GameStorage {
       focusBoostEnabled: focusBoostEnabled,
     );
 
+    final offlineDuration = OfflineRevenueCalculator.cappedDuration(
+      lastSavedAt: loaded.lastSavedAt,
+      now: now,
+    );
     final offlineGold = OfflineRevenueCalculator.calculate(
       state: loaded,
       now: now,
     );
+    final checkpoint = offlineGold > 0 ? loaded.lastSavedAt : now;
 
-    return loaded.copyWith(lastSavedAt: now, pendingOfflineGold: offlineGold);
+    return loaded.copyWith(
+      lastSavedAt: checkpoint,
+      pendingOfflineGold: offlineGold,
+      offlineReward: OfflineReward(
+        gold: offlineGold,
+        duration: offlineDuration,
+        maxDuration: OfflineRevenueCalculator.maxOfflineDuration,
+        efficiency: OfflineRevenueCalculator.offlineEfficiency,
+      ),
+    );
   }
 
   Future<void> save(GameState state) async {

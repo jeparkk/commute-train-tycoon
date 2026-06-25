@@ -12,6 +12,8 @@ class BalanceConfig {
   static const maxSlotLevel = 20;
   static const maxDecorationLevel = 10;
   static const appealPerSlotLevel = 12;
+  static const maxOfflineDuration = Duration(hours: 6);
+  static const offlineEfficiency = 0.35;
 
   static const slots = {
     SlotKind.seat: SlotBalance(

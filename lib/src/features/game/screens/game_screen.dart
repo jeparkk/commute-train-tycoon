@@ -5,13 +5,14 @@ import 'package:flutter/material.dart';
 import '../data/balance_config.dart';
 import '../models/decoration.dart';
 import '../models/game_state.dart';
+import '../models/offline_reward.dart';
 import '../models/slot_kind.dart';
 import '../models/upgrade_slot.dart';
 import '../services/game_storage.dart';
 import '../widgets/bottom_actions.dart';
 import '../widgets/decoration_panel.dart';
 import '../widgets/game_header.dart';
-import '../widgets/offline_panel.dart';
+import '../widgets/offline_reward_sheet.dart';
 import '../widgets/status_panel.dart';
 import '../widgets/train_cabin.dart';
 
@@ -78,6 +79,12 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     });
 
     _saveTimer = Timer.periodic(const Duration(seconds: 12), (_) => _save());
+
+    if (loaded.offlineReward.hasReward) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showOfflineRewardSheet();
+      });
+    }
   }
 
   Future<void> _save() async {
@@ -86,9 +93,11 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       return;
     }
 
-    await _storage.save(
-      current.copyWith(lastSavedAt: DateTime.now(), pendingOfflineGold: 0),
-    );
+    final saveState = current.pendingOfflineGold > 0
+        ? current
+        : current.copyWith(lastSavedAt: DateTime.now());
+
+    await _storage.save(saveState);
   }
 
   void _claimOfflineGold({required bool doubled}) {
@@ -102,11 +111,45 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       _state = current.copyWith(
         gold: current.gold + reward,
         pendingOfflineGold: 0,
+        offlineReward: _emptyOfflineReward(current.offlineReward),
         lastSavedAt: DateTime.now(),
       );
       _toast = doubled ? '광고 정산 테스트: 보상 2배!' : '오프라인 보상 수금 완료';
     });
     _save();
+  }
+
+  void _showOfflineRewardSheet() {
+    final current = _state;
+    if (current == null || !current.offlineReward.hasReward || !mounted) {
+      return;
+    }
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      isDismissible: false,
+      enableDrag: false,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return OfflineRewardSheet(
+          reward: current.offlineReward,
+          onClaim: ({required doubled}) {
+            Navigator.of(sheetContext).pop();
+            _claimOfflineGold(doubled: doubled);
+          },
+        );
+      },
+    );
+  }
+
+  OfflineReward _emptyOfflineReward(OfflineReward reward) {
+    return OfflineReward(
+      gold: 0,
+      duration: Duration.zero,
+      maxDuration: reward.maxDuration,
+      efficiency: reward.efficiency,
+    );
   }
 
   void _upgrade(SlotKind kind) {
@@ -281,7 +324,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                 onUpgrade: _upgrade,
                 onOpenDecorations: _openDecorationPanel,
                 onToggleFocusBoost: _toggleFocusBoost,
-                onClaimOfflineGold: _claimOfflineGold,
                 onClaimWarpStubReward: _claimWarpStubReward,
                 onShowComingSoon: _showComingSoon,
               ),
@@ -297,7 +339,6 @@ class _GameContent extends StatelessWidget {
     required this.onUpgrade,
     required this.onOpenDecorations,
     required this.onToggleFocusBoost,
-    required this.onClaimOfflineGold,
     required this.onClaimWarpStubReward,
     required this.onShowComingSoon,
   });
@@ -307,7 +348,6 @@ class _GameContent extends StatelessWidget {
   final ValueChanged<SlotKind> onUpgrade;
   final VoidCallback onOpenDecorations;
   final ValueChanged<bool> onToggleFocusBoost;
-  final void Function({required bool doubled}) onClaimOfflineGold;
   final VoidCallback onClaimWarpStubReward;
   final ValueChanged<String> onShowComingSoon;
 
@@ -338,13 +378,6 @@ class _GameContent extends StatelessWidget {
                       onToggleFocusBoost: onToggleFocusBoost,
                     ),
                     const SizedBox(height: 12),
-                    if (state.pendingOfflineGold > 0)
-                      OfflinePanel(
-                        reward: state.pendingOfflineGold,
-                        onClaimOfflineGold: onClaimOfflineGold,
-                      ),
-                    if (state.pendingOfflineGold > 0)
-                      const SizedBox(height: 12),
                     TrainCabin(
                       state: state,
                       onUpgrade: onUpgrade,

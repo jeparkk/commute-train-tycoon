@@ -1,5 +1,6 @@
 import '../data/balance_config.dart';
 import 'decoration.dart';
+import 'offline_reward.dart';
 import 'slot_kind.dart';
 import 'upgrade_slot.dart';
 
@@ -10,6 +11,7 @@ class GameState {
     required this.decorations,
     required this.lastSavedAt,
     required this.pendingOfflineGold,
+    required this.offlineReward,
     required this.focusBoostEnabled,
   });
 
@@ -32,6 +34,12 @@ class GameState {
       },
       lastSavedAt: now,
       pendingOfflineGold: 0,
+      offlineReward: const OfflineReward(
+        gold: 0,
+        duration: Duration.zero,
+        maxDuration: BalanceConfig.maxOfflineDuration,
+        efficiency: BalanceConfig.offlineEfficiency,
+      ),
       focusBoostEnabled: true,
     );
   }
@@ -41,6 +49,7 @@ class GameState {
   final Map<DecorationSlotKind, PlacedDecoration?> decorations;
   final DateTime lastSavedAt;
   final int pendingOfflineGold;
+  final OfflineReward offlineReward;
   final bool focusBoostEnabled;
 
   double get baseIncomePerSecond {
@@ -87,6 +96,7 @@ class GameState {
     Map<DecorationSlotKind, PlacedDecoration?>? decorations,
     DateTime? lastSavedAt,
     int? pendingOfflineGold,
+    OfflineReward? offlineReward,
     bool? focusBoostEnabled,
   }) {
     return GameState(
@@ -95,6 +105,7 @@ class GameState {
       decorations: decorations ?? this.decorations,
       lastSavedAt: lastSavedAt ?? this.lastSavedAt,
       pendingOfflineGold: pendingOfflineGold ?? this.pendingOfflineGold,
+      offlineReward: offlineReward ?? this.offlineReward,
       focusBoostEnabled: focusBoostEnabled ?? this.focusBoostEnabled,
     );
   }
