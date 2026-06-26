@@ -19,6 +19,7 @@ class BalanceConfig {
   static const movementScreenOnMultiplier = 2.0;
   static const minimumMovementRewardKm = 0.05;
   static const adGrantGold = 160;
+  static const lostItemGoldReward = 45;
   static const vipOfflineDuration = Duration(hours: 12);
 
   static const slots = {

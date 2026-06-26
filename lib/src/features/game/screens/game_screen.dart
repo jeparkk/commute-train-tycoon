@@ -45,6 +45,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   String? _toast;
   bool _locationBusy = false;
   bool _monetizationBusy = false;
+  bool _lostItemAvailable = true;
+  int _incomePulse = 0;
 
   @override
   void initState() {
@@ -91,6 +93,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         _state = current.copyWith(
           gold: current.gold + current.activeIncomePerSecond,
         );
+        _incomePulse += 1;
       });
     });
 
@@ -201,13 +204,14 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       _state = current.copyWith(
         gold: current.gold - slot.nextCost,
         slots: nextSlots,
+        onboardingSeen: current.onboardingSeen || kind == SlotKind.seat,
       );
       _toast = '${slot.kind.label} Lv.${slot.level + 1} 업그레이드!';
     });
     _save();
   }
 
-  void _openDecorationPanel() {
+  void _openDecorationPanel(DecorationSlotKind selectedSlotKind) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -222,6 +226,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
             return DecorationPanel(
               state: current,
+              selectedSlotKind: selectedSlotKind,
               onBuy: (slotKind, item) {
                 _buyDecoration(slotKind, item);
                 setModalState(() {});
@@ -262,6 +267,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       _state = current.copyWith(
         gold: current.gold - item.baseCost,
         decorations: nextDecorations,
+        onboardingSeen: true,
       );
       _toast = '${item.name} 배치 완료!';
     });
@@ -311,6 +317,23 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     setState(() {
       _state = current.copyWith(focusBoostEnabled: enabled);
       _toast = enabled ? '화면 ON 2배 수익 적용 중' : '기본 수익 모드';
+    });
+    _save();
+  }
+
+  void _claimLostItem() {
+    final current = _state;
+    if (current == null || !_lostItemAvailable) {
+      return;
+    }
+
+    setState(() {
+      _lostItemAvailable = false;
+      _state = current.copyWith(
+        gold: current.gold + BalanceConfig.lostItemGoldReward,
+        onboardingSeen: true,
+      );
+      _toast = '분실물 정리: +${BalanceConfig.lostItemGoldReward} G';
     });
     _save();
   }
@@ -613,8 +636,11 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
             : _GameContent(
                 state: state,
                 toast: _toast,
+                incomePulse: _incomePulse,
+                lostItemAvailable: _lostItemAvailable,
                 onUpgrade: _upgrade,
                 onOpenDecorations: _openDecorationPanel,
+                onClaimLostItem: _claimLostItem,
                 onToggleFocusBoost: _toggleFocusBoost,
                 onOpenMovementBonus: _openMovementBonusSheet,
                 onOpenShop: _openShopSheet,
@@ -628,8 +654,11 @@ class _GameContent extends StatelessWidget {
   const _GameContent({
     required this.state,
     required this.toast,
+    required this.incomePulse,
+    required this.lostItemAvailable,
     required this.onUpgrade,
     required this.onOpenDecorations,
+    required this.onClaimLostItem,
     required this.onToggleFocusBoost,
     required this.onOpenMovementBonus,
     required this.onOpenShop,
@@ -637,8 +666,11 @@ class _GameContent extends StatelessWidget {
 
   final GameState state;
   final String? toast;
+  final int incomePulse;
+  final bool lostItemAvailable;
   final ValueChanged<SlotKind> onUpgrade;
-  final VoidCallback onOpenDecorations;
+  final ValueChanged<DecorationSlotKind> onOpenDecorations;
+  final VoidCallback onClaimLostItem;
   final ValueChanged<bool> onToggleFocusBoost;
   final VoidCallback onOpenMovementBonus;
   final VoidCallback onOpenShop;
@@ -672,8 +704,12 @@ class _GameContent extends StatelessWidget {
                     const SizedBox(height: 12),
                     TrainCabin(
                       state: state,
+                      incomePulse: incomePulse,
+                      lostItemAvailable: lostItemAvailable,
+                      showFirstGoal: !state.onboardingSeen,
                       onUpgrade: onUpgrade,
                       onOpenDecorations: onOpenDecorations,
+                      onClaimLostItem: onClaimLostItem,
                     ),
                     const SizedBox(height: 12),
                     BottomActions(

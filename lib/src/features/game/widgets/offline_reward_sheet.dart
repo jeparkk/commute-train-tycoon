@@ -80,6 +80,8 @@ class OfflineRewardSheet extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 18),
+              const _TicketPerforation(),
+              const SizedBox(height: 12),
               DecoratedBox(
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -129,6 +131,8 @@ class OfflineRewardSheet extends StatelessWidget {
                           ),
                         ),
                       ],
+                      const SizedBox(height: 10),
+                      const _StationStamp(text: '차고지 보관 완료'),
                     ],
                   ),
                 ),
@@ -165,6 +169,62 @@ class OfflineRewardSheet extends StatelessWidget {
       return '$hours시간 $minutes분';
     }
     return '$minutes분';
+  }
+}
+
+class _TicketPerforation extends StatelessWidget {
+  const _TicketPerforation();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: List.generate(18, (index) {
+        return Expanded(
+          child: Container(
+            height: 2,
+            margin: EdgeInsets.only(right: index == 17 ? 0 : 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFD8CBB8),
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+}
+
+class _StationStamp extends StatelessWidget {
+  const _StationStamp({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Transform.rotate(
+        angle: -0.08,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF6DF),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFF0F705F), width: 2),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            child: Text(
+              text,
+              style: const TextStyle(
+                color: Color(0xFF0F705F),
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

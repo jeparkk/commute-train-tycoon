@@ -10,12 +10,14 @@ import 'currency_pill.dart';
 class DecorationPanel extends StatelessWidget {
   const DecorationPanel({
     required this.state,
+    required this.selectedSlotKind,
     required this.onBuy,
     required this.onUpgrade,
     super.key,
   });
 
   final GameState state;
+  final DecorationSlotKind selectedSlotKind;
   final void Function(DecorationSlotKind slotKind, DecorationItem item) onBuy;
   final ValueChanged<DecorationSlotKind> onUpgrade;
 
@@ -65,20 +67,17 @@ class DecorationPanel extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 6),
-              const Text(
-                '빈 위치에는 장식을 사고, 배치된 장식은 바로 업그레이드합니다.',
-                style: TextStyle(color: Color(0xFF65706C)),
+              Text(
+                '${selectedSlotKind.label} 위치를 꾸밉니다.',
+                style: const TextStyle(color: Color(0xFF65706C)),
               ),
               const SizedBox(height: 16),
-              for (final slotKind in DecorationSlotKind.values) ...[
-                _DecorationSlotSection(
-                  slotKind: slotKind,
-                  state: state,
-                  onBuy: onBuy,
-                  onUpgrade: onUpgrade,
-                ),
-                const SizedBox(height: 12),
-              ],
+              _DecorationSlotSection(
+                slotKind: selectedSlotKind,
+                state: state,
+                onBuy: onBuy,
+                onUpgrade: onUpgrade,
+              ),
             ],
           ),
         );

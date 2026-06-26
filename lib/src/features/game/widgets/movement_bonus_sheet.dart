@@ -87,6 +87,8 @@ class MovementBonusSheet extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
+              const _RouteTicketLine(),
+              const SizedBox(height: 12),
               DecoratedBox(
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -183,6 +185,8 @@ class _LastReportCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
+            const _ArrivalStamp(),
+            const SizedBox(height: 10),
             _MovementMetaRow(
               icon: Icons.alt_route_rounded,
               label: '이동 거리',
@@ -213,6 +217,92 @@ class _LastReportCard extends StatelessWidget {
       return '$minutes분 $seconds초';
     }
     return '$seconds초';
+  }
+}
+
+class _RouteTicketLine extends StatelessWidget {
+  const _RouteTicketLine();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const _RouteDot(label: '출발역'),
+        Expanded(
+          child: Container(
+            height: 4,
+            margin: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFD2A84F),
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+        ),
+        const _RouteDot(label: '도착역'),
+      ],
+    );
+  }
+}
+
+class _RouteDot extends StatelessWidget {
+  const _RouteDot({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 20,
+          height: 20,
+          decoration: BoxDecoration(
+            color: const Color(0xFF4F6FA8),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: Colors.white, width: 3),
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFF65706C),
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ArrivalStamp extends StatelessWidget {
+  const _ArrivalStamp();
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF6DF),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFF4F6FA8), width: 2),
+        ),
+        child: const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          child: Text(
+            '도착 확인',
+            style: TextStyle(
+              color: Color(0xFF4F6FA8),
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

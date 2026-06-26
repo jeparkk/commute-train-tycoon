@@ -16,6 +16,14 @@ class GameAssets {
       key: 'train_badge',
       path: 'assets/images/ui/train_badge.png',
     ),
+    'cabin_default': GameAsset(
+      key: 'cabin_default',
+      path: 'assets/images/backgrounds/cabin_default.png',
+    ),
+    'window_city_morning': GameAsset(
+      key: 'window_city_morning',
+      path: 'assets/images/backgrounds/window_city_morning.png',
+    ),
     'seat_lv1': GameAsset(
       key: 'seat_lv1',
       path: 'assets/images/slots/seat_lv1.png',
@@ -67,6 +75,18 @@ class GameAssets {
     'lost_box_lv1': GameAsset(
       key: 'lost_box_lv1',
       path: 'assets/images/decorations/lost_box_lv1.png',
+    ),
+    'passenger_worker': GameAsset(
+      key: 'passenger_worker',
+      path: 'assets/images/characters/passenger_worker.png',
+    ),
+    'passenger_vip': GameAsset(
+      key: 'passenger_vip',
+      path: 'assets/images/characters/passenger_vip.png',
+    ),
+    'mascot_station_cat': GameAsset(
+      key: 'mascot_station_cat',
+      path: 'assets/images/characters/mascot_station_cat.png',
     ),
   };
 

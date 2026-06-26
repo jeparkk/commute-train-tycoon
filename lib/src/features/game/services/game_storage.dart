@@ -20,6 +20,7 @@ class GameStorage {
   static const _vipPassActiveKey = 'vipPassActive';
   static const _adsRemovedKey = 'adsRemoved';
   static const _rewardedAdsWatchedKey = 'rewardedAdsWatched';
+  static const _onboardingSeenKey = 'onboardingSeen';
   static const _lastMoveDistanceKey = 'lastMoveDistanceKm';
   static const _lastMoveDurationKey = 'lastMoveDurationSeconds';
   static const _lastMoveGoldKey = 'lastMoveGold';
@@ -85,6 +86,7 @@ class GameStorage {
       movementCheckpoint: _loadMovementCheckpoint(prefs),
       lastMovementReport: _loadMovementReport(prefs),
       monetization: monetization,
+      onboardingSeen: prefs.getBool(_onboardingSeenKey) ?? false,
       focusBoostEnabled: focusBoostEnabled,
     );
 
@@ -129,6 +131,7 @@ class GameStorage {
       _rewardedAdsWatchedKey,
       state.monetization.rewardedAdsWatched,
     );
+    await prefs.setBool(_onboardingSeenKey, state.onboardingSeen);
 
     for (final entry in state.slots.entries) {
       await prefs.setInt(_levelKey(entry.key), entry.value.level);

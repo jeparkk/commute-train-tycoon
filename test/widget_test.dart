@@ -21,6 +21,8 @@ void main() {
     expect(find.text('COMMUTE EXPRESS'), findsOneWidget);
     expect(find.text('VIP'), findsOneWidget);
     expect(find.text('+3.8 G/s'), findsOneWidget);
+    expect(find.text('첫 목표: 좌석 승급'), findsOneWidget);
+    expect(find.text('분실물'), findsOneWidget);
   });
 
   testWidgets('upgrades a slot when enough gold is available', (tester) async {
@@ -34,6 +36,22 @@ void main() {
 
     expect(find.text('좌석 Lv.2'), findsOneWidget);
     expect(find.text('좌석 Lv.2 업그레이드!'), findsOneWidget);
+    expect(find.text('첫 목표: 좌석 승급'), findsNothing);
+  });
+
+  testWidgets('lost item grants a small cabin reward', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+
+    await tester.pumpWidget(const CommuteTrainTycoonApp());
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('분실물'));
+    await tester.pump();
+    await tester.tap(find.text('분실물'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('분실물 정리: +45 G'), findsOneWidget);
+    expect(find.text('분실물'), findsNothing);
   });
 
   testWidgets('buys and upgrades a decoration', (tester) async {

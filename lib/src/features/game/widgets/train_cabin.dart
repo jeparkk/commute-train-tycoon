@@ -10,14 +10,22 @@ import '../models/upgrade_slot.dart';
 class TrainCabin extends StatefulWidget {
   const TrainCabin({
     required this.state,
+    required this.incomePulse,
+    required this.lostItemAvailable,
+    required this.showFirstGoal,
     required this.onUpgrade,
     required this.onOpenDecorations,
+    required this.onClaimLostItem,
     super.key,
   });
 
   final GameState state;
+  final int incomePulse;
+  final bool lostItemAvailable;
+  final bool showFirstGoal;
   final ValueChanged<SlotKind> onUpgrade;
-  final VoidCallback onOpenDecorations;
+  final ValueChanged<DecorationSlotKind> onOpenDecorations;
+  final VoidCallback onClaimLostItem;
 
   @override
   State<TrainCabin> createState() => _TrainCabinState();
@@ -139,7 +147,8 @@ class _TrainCabinState extends State<TrainCabin>
                       placed:
                           widget.state.decorations[DecorationSlotKind.window],
                       pulse: pulse,
-                      onTap: widget.onOpenDecorations,
+                      onTap: () =>
+                          widget.onOpenDecorations(DecorationSlotKind.window),
                     ),
                     _DecorationSlot(
                       right: 145,
@@ -147,7 +156,8 @@ class _TrainCabinState extends State<TrainCabin>
                       title: '벽 장식',
                       placed: widget.state.decorations[DecorationSlotKind.wall],
                       pulse: 1 - pulse,
-                      onTap: widget.onOpenDecorations,
+                      onTap: () =>
+                          widget.onOpenDecorations(DecorationSlotKind.wall),
                     ),
                     _DecorationSlot(
                       left: 210,
@@ -156,18 +166,38 @@ class _TrainCabinState extends State<TrainCabin>
                       placed:
                           widget.state.decorations[DecorationSlotKind.floor],
                       pulse: pulse,
-                      onTap: widget.onOpenDecorations,
+                      onTap: () =>
+                          widget.onOpenDecorations(DecorationSlotKind.floor),
                     ),
                     Positioned(
                       right: 20,
                       bottom: 28 + bob,
                       child: _Mascot(energized: widget.state.focusBoostEnabled),
                     ),
-                    Positioned(
-                      left: 185,
-                      bottom: 72,
-                      child: _LostItem(pulse: pulse),
-                    ),
+                    if (widget.lostItemAvailable)
+                      Positioned(
+                        left: 185,
+                        bottom: 72,
+                        child: _LostItem(
+                          pulse: pulse,
+                          onTap: widget.onClaimLostItem,
+                        ),
+                      ),
+                    if (widget.incomePulse > 0)
+                      Positioned(
+                        left: 130,
+                        bottom: 145,
+                        child: _FloatingIncome(
+                          pulseKey: widget.incomePulse,
+                          amount: widget.state.activeIncomePerSecond,
+                        ),
+                      ),
+                    if (widget.showFirstGoal)
+                      const Positioned(
+                        left: 92,
+                        top: 52,
+                        child: _FirstGoalTicket(),
+                      ),
                     Positioned(
                       left: 12,
                       top: 10,
@@ -1070,37 +1100,145 @@ class _MascotPainter extends CustomPainter {
 }
 
 class _LostItem extends StatelessWidget {
-  const _LostItem({required this.pulse});
+  const _LostItem({required this.pulse, required this.onTap});
 
   final double pulse;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Transform.scale(
-      scale: 0.94 + pulse * 0.08,
+    return Tooltip(
+      message: '분실물',
+      child: Transform.scale(
+        scale: 0.94 + pulse * 0.08,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: onTap,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF6DF),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFF9B6A00), width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Color.lerp(
+                      const Color(0x11FFF5A8),
+                      const Color(0xAAFFF5A8),
+                      pulse,
+                    )!,
+                    blurRadius: 14,
+                  ),
+                ],
+              ),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 7, vertical: 5),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.inventory_2_rounded,
+                      size: 20,
+                      color: Color(0xFFD2A84F),
+                    ),
+                    Text(
+                      '분실물',
+                      style: TextStyle(
+                        fontSize: 8,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF70550B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FloatingIncome extends StatelessWidget {
+  const _FloatingIncome({required this.pulseKey, required this.amount});
+
+  final int pulseKey;
+  final double amount;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      key: ValueKey(pulseKey),
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 820),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: 1 - value,
+          child: Transform.translate(
+            offset: Offset(0, -34 * value),
+            child: Transform.scale(scale: 0.85 + value * 0.2, child: child),
+          ),
+        );
+      },
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: const Color(0xFFFFF6DF),
-          borderRadius: BorderRadius.circular(8),
+          color: const Color(0xFFFFF5A8),
+          borderRadius: BorderRadius.circular(999),
           border: Border.all(color: const Color(0xFF9B6A00), width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: Color.lerp(
-                const Color(0x11FFF5A8),
-                const Color(0xAAFFF5A8),
-                pulse,
-              )!,
-              blurRadius: 14,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+          child: Text(
+            '+${amount.toStringAsFixed(1)} G',
+            style: const TextStyle(
+              color: Color(0xFF70550B),
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FirstGoalTicket extends StatelessWidget {
+  const _FirstGoalTicket();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF6DF),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFD2A84F), width: 2),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x22000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.touch_app_rounded, size: 15, color: Color(0xFF9B6A00)),
+            SizedBox(width: 5),
+            Text(
+              '첫 목표: 좌석 승급',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                color: Color(0xFF70550B),
+              ),
             ),
           ],
-        ),
-        child: const Padding(
-          padding: EdgeInsets.all(7),
-          child: Icon(
-            Icons.inventory_2_rounded,
-            size: 22,
-            color: Color(0xFFD2A84F),
-          ),
         ),
       ),
     );

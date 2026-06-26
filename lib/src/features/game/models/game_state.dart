@@ -19,6 +19,7 @@ class GameState {
     required this.movementCheckpoint,
     required this.lastMovementReport,
     required this.monetization,
+    required this.onboardingSeen,
     required this.focusBoostEnabled,
   });
 
@@ -51,6 +52,7 @@ class GameState {
       movementCheckpoint: const MovementCheckpoint.empty(),
       lastMovementReport: const MovementReport.empty(),
       monetization: const MonetizationState.initial(),
+      onboardingSeen: false,
       focusBoostEnabled: true,
     );
   }
@@ -65,6 +67,7 @@ class GameState {
   final MovementCheckpoint movementCheckpoint;
   final MovementReport lastMovementReport;
   final MonetizationState monetization;
+  final bool onboardingSeen;
   final bool focusBoostEnabled;
 
   double get baseIncomePerSecond {
@@ -116,6 +119,7 @@ class GameState {
     MovementCheckpoint? movementCheckpoint,
     MovementReport? lastMovementReport,
     MonetizationState? monetization,
+    bool? onboardingSeen,
     bool? focusBoostEnabled,
   }) {
     return GameState(
@@ -129,6 +133,7 @@ class GameState {
       movementCheckpoint: movementCheckpoint ?? this.movementCheckpoint,
       lastMovementReport: lastMovementReport ?? this.lastMovementReport,
       monetization: monetization ?? this.monetization,
+      onboardingSeen: onboardingSeen ?? this.onboardingSeen,
       focusBoostEnabled: focusBoostEnabled ?? this.focusBoostEnabled,
     );
   }

@@ -26,6 +26,12 @@ assets/images/characters/passenger_student.png
 
 After adding a real PNG, set that asset's `available` value to `true` in `GameAssets`.
 
+For the full production pipeline, see:
+
+```text
+docs/asset-pipeline.md
+```
+
 ## Art Direction
 
 Use a soft pixel-inspired 2D illustration style:
