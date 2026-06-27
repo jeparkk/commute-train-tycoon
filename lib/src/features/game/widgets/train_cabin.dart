@@ -84,151 +84,167 @@ class _TrainCabinState extends State<TrainCabin>
               aspectRatio: 0.74,
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Stack(
-                  children: [
-                    const Positioned.fill(child: _CabinSceneBackground()),
-                    if (!usesCabinAsset)
-                      const Positioned(
-                        left: 18,
-                        right: 18,
-                        top: 24,
-                        child: _WindowStrip(),
-                      ),
-                    if (!usesCabinAsset)
-                      Positioned(
-                        left: 14,
-                        right: 14,
-                        bottom: 8,
-                        child: _TrackFloor(hasDecorations: hasDecorations),
-                      ),
-                    Positioned(
-                      left: 28,
-                      top: 126 + bob,
-                      child: _Passenger(
-                        assetKey: 'passenger_worker',
-                        color: const Color(0xFFEB7D65),
-                        shirt: const Color(0xFFFFD36A),
-                        label: '+팁',
-                        delay: pulse,
-                      ),
-                    ),
-                    Positioned(
-                      right: 105,
-                      top: 116 - bob,
-                      child: _Passenger(
-                        assetKey: 'passenger_vip',
-                        color: const Color(0xFF667BC6),
-                        shirt: const Color(0xFF8ED5C2),
-                        label: 'VIP',
-                        delay: 1 - pulse,
-                      ),
-                    ),
-                    _SceneTapTarget(
-                      left: 18,
-                      top: 174,
-                      width: 175,
-                      height: 122,
-                      ready: _isReady(seat),
-                      pulse: pulse,
-                      label: '좌석 Lv.${seat.level}',
-                      subLabel: seat.isMaxed ? 'MAX' : '${seat.nextCost} G',
-                      onTap: () => widget.onUpgrade(SlotKind.seat),
-                      child: _SeatObject(level: seat.level),
-                    ),
-                    _SceneTapTarget(
-                      right: 16,
-                      top: 154,
-                      width: 128,
-                      height: 150,
-                      ready: _isReady(kiosk),
-                      pulse: 1 - pulse,
-                      label: '매점 Lv.${kiosk.level}',
-                      subLabel: kiosk.isMaxed ? 'MAX' : '${kiosk.nextCost} G',
-                      onTap: () => widget.onUpgrade(SlotKind.kiosk),
-                      child: _KioskObject(level: kiosk.level),
-                    ),
-                    _DecorationSlot(
-                      left: 22,
-                      top: 94,
-                      width: 86,
-                      height: 66,
-                      title: '창가 장식',
-                      placed:
-                          widget.state.decorations[DecorationSlotKind.window],
-                      pulse: pulse,
-                      onTap: () =>
-                          widget.onOpenDecorations(DecorationSlotKind.window),
-                    ),
-                    _DecorationSlot(
-                      right: 145,
-                      top: 93,
-                      width: 86,
-                      height: 66,
-                      title: '벽 장식',
-                      placed: widget.state.decorations[DecorationSlotKind.wall],
-                      pulse: 1 - pulse,
-                      onTap: () =>
-                          widget.onOpenDecorations(DecorationSlotKind.wall),
-                    ),
-                    _DecorationSlot(
-                      left: 210,
-                      bottom: 39,
-                      width: 82,
-                      height: 82,
-                      title: '바닥 장식',
-                      placed:
-                          widget.state.decorations[DecorationSlotKind.floor],
-                      pulse: pulse,
-                      onTap: () =>
-                          widget.onOpenDecorations(DecorationSlotKind.floor),
-                    ),
-                    Positioned(
-                      right: 20,
-                      bottom: 28 + bob,
-                      child: _Mascot(energized: widget.state.focusBoostEnabled),
-                    ),
-                    if (widget.lostItemAvailable)
-                      Positioned(
-                        left: 185,
-                        bottom: 72,
-                        child: _LostItem(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final width = constraints.maxWidth;
+                    final height = constraints.maxHeight;
+
+                    return Stack(
+                      children: [
+                        const Positioned.fill(child: _CabinSceneBackground()),
+                        if (!usesCabinAsset)
+                          const Positioned(
+                            left: 18,
+                            right: 18,
+                            top: 24,
+                            child: _WindowStrip(),
+                          ),
+                        if (!usesCabinAsset)
+                          Positioned(
+                            left: 14,
+                            right: 14,
+                            bottom: 8,
+                            child: _TrackFloor(hasDecorations: hasDecorations),
+                          ),
+                        Positioned(
+                          left: width * 0.04,
+                          top: height * 0.035,
+                          child: _SceneBadge(
+                            text: 'COMMUTE EXPRESS',
+                            icon: Icons.train_rounded,
+                          ),
+                        ),
+                        Positioned(
+                          right: width * 0.04,
+                          top: height * 0.035,
+                          child: _IncomeBubble(
+                            text:
+                                '+${widget.state.activeIncomePerSecond.toStringAsFixed(1)} G/s',
+                            pulse: pulse,
+                          ),
+                        ),
+                        if (widget.showFirstGoal)
+                          Positioned(
+                            left: width * 0.22,
+                            top: height * 0.095,
+                            child: const _FirstGoalTicket(),
+                          ),
+                        _DecorationSlot(
+                          left: width * 0.08,
+                          top: height * 0.21,
+                          width: width * 0.23,
+                          height: height * 0.105,
+                          title: '창가 장식',
+                          placed: widget
+                              .state
+                              .decorations[DecorationSlotKind.window],
                           pulse: pulse,
-                          onTap: widget.onClaimLostItem,
+                          onTap: () => widget.onOpenDecorations(
+                            DecorationSlotKind.window,
+                          ),
                         ),
-                      ),
-                    if (widget.incomePulse > 0)
-                      Positioned(
-                        left: 130,
-                        bottom: 145,
-                        child: _FloatingIncome(
-                          pulseKey: widget.incomePulse,
-                          amount: widget.state.activeIncomePerSecond,
+                        _DecorationSlot(
+                          left: width * 0.39,
+                          top: height * 0.21,
+                          width: width * 0.24,
+                          height: height * 0.105,
+                          title: '벽 장식',
+                          placed:
+                              widget.state.decorations[DecorationSlotKind.wall],
+                          pulse: 1 - pulse,
+                          onTap: () =>
+                              widget.onOpenDecorations(DecorationSlotKind.wall),
                         ),
-                      ),
-                    if (widget.showFirstGoal)
-                      const Positioned(
-                        left: 92,
-                        top: 52,
-                        child: _FirstGoalTicket(),
-                      ),
-                    Positioned(
-                      left: 12,
-                      top: 10,
-                      child: _SceneBadge(
-                        text: 'COMMUTE EXPRESS',
-                        icon: Icons.train_rounded,
-                      ),
-                    ),
-                    Positioned(
-                      right: 12,
-                      top: 10,
-                      child: _IncomeBubble(
-                        text:
-                            '+${widget.state.activeIncomePerSecond.toStringAsFixed(1)} G/s',
-                        pulse: pulse,
-                      ),
-                    ),
-                  ],
+                        Positioned(
+                          left: width * 0.11,
+                          top: height * 0.34 + bob,
+                          child: _Passenger(
+                            assetKey: 'passenger_worker',
+                            color: const Color(0xFFEB7D65),
+                            shirt: const Color(0xFFFFD36A),
+                            label: '+팁',
+                            delay: pulse,
+                          ),
+                        ),
+                        Positioned(
+                          right: width * 0.29,
+                          top: height * 0.32 - bob,
+                          child: _Passenger(
+                            assetKey: 'passenger_vip',
+                            color: const Color(0xFF667BC6),
+                            shirt: const Color(0xFF8ED5C2),
+                            label: 'VIP',
+                            delay: 1 - pulse,
+                          ),
+                        ),
+                        _SceneTapTarget(
+                          left: width * 0.09,
+                          top: height * 0.39,
+                          width: width * 0.43,
+                          height: height * 0.23,
+                          ready: _isReady(seat),
+                          pulse: pulse,
+                          label: '좌석 Lv.${seat.level}',
+                          subLabel: seat.isMaxed ? 'MAX' : '${seat.nextCost} G',
+                          onTap: () => widget.onUpgrade(SlotKind.seat),
+                          child: _SeatObject(level: seat.level),
+                        ),
+                        _SceneTapTarget(
+                          right: width * 0.08,
+                          top: height * 0.39,
+                          width: width * 0.35,
+                          height: height * 0.23,
+                          ready: _isReady(kiosk),
+                          pulse: 1 - pulse,
+                          label: '매점 Lv.${kiosk.level}',
+                          subLabel: kiosk.isMaxed
+                              ? 'MAX'
+                              : '${kiosk.nextCost} G',
+                          onTap: () => widget.onUpgrade(SlotKind.kiosk),
+                          child: _KioskObject(level: kiosk.level),
+                        ),
+                        if (widget.incomePulse > 0)
+                          Positioned(
+                            left: width * 0.39,
+                            top: height * 0.55,
+                            child: _FloatingIncome(
+                              pulseKey: widget.incomePulse,
+                              amount: widget.state.activeIncomePerSecond,
+                            ),
+                          ),
+                        if (widget.lostItemAvailable)
+                          Positioned(
+                            left: width * 0.47,
+                            bottom: height * 0.16,
+                            child: _LostItem(
+                              pulse: pulse,
+                              onTap: widget.onClaimLostItem,
+                            ),
+                          ),
+                        _DecorationSlot(
+                          right: width * 0.2,
+                          bottom: height * 0.105,
+                          width: width * 0.21,
+                          height: height * 0.14,
+                          title: '바닥 장식',
+                          placed: widget
+                              .state
+                              .decorations[DecorationSlotKind.floor],
+                          pulse: pulse,
+                          onTap: () => widget.onOpenDecorations(
+                            DecorationSlotKind.floor,
+                          ),
+                        ),
+                        Positioned(
+                          right: width * 0.08,
+                          bottom: height * 0.055 + bob,
+                          child: _Mascot(
+                            energized: widget.state.focusBoostEnabled,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
             ),

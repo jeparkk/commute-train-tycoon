@@ -31,6 +31,8 @@ void main() {
     await tester.pumpWidget(const CommuteTrainTycoonApp());
     await tester.pumpAndSettle();
 
+    await tester.ensureVisible(find.text('좌석 Lv.1'));
+    await tester.pump();
     await tester.tap(find.text('좌석 Lv.1'));
     await tester.pump();
 
