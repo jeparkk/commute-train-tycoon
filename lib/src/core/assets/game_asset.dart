@@ -19,6 +19,7 @@ class GameAssets {
     'cabin_default': GameAsset(
       key: 'cabin_default',
       path: 'assets/images/backgrounds/cabin_default.png',
+      available: true,
     ),
     'window_city_morning': GameAsset(
       key: 'window_city_morning',
@@ -27,26 +28,32 @@ class GameAssets {
     'seat_lv1': GameAsset(
       key: 'seat_lv1',
       path: 'assets/images/slots/seat_lv1.png',
+      available: true,
     ),
     'seat_lv2': GameAsset(
       key: 'seat_lv2',
       path: 'assets/images/slots/seat_lv2.png',
+      available: true,
     ),
     'seat_lv3': GameAsset(
       key: 'seat_lv3',
       path: 'assets/images/slots/seat_lv3.png',
+      available: true,
     ),
     'kiosk_lv1': GameAsset(
       key: 'kiosk_lv1',
       path: 'assets/images/slots/kiosk_lv1.png',
+      available: true,
     ),
     'kiosk_lv2': GameAsset(
       key: 'kiosk_lv2',
       path: 'assets/images/slots/kiosk_lv2.png',
+      available: true,
     ),
     'kiosk_lv3': GameAsset(
       key: 'kiosk_lv3',
       path: 'assets/images/slots/kiosk_lv3.png',
+      available: true,
     ),
     'decor_manager': GameAsset(
       key: 'decor_manager',
@@ -55,6 +62,7 @@ class GameAssets {
     'tiny_plant_lv1': GameAsset(
       key: 'tiny_plant_lv1',
       path: 'assets/images/decorations/tiny_plant_lv1.png',
+      available: true,
     ),
     'cat_doll_lv1': GameAsset(
       key: 'cat_doll_lv1',
@@ -67,26 +75,32 @@ class GameAssets {
     'route_map_lv1': GameAsset(
       key: 'route_map_lv1',
       path: 'assets/images/decorations/route_map_lv1.png',
+      available: true,
     ),
     'soft_rug_lv1': GameAsset(
       key: 'soft_rug_lv1',
       path: 'assets/images/decorations/soft_rug_lv1.png',
+      available: true,
     ),
     'lost_box_lv1': GameAsset(
       key: 'lost_box_lv1',
       path: 'assets/images/decorations/lost_box_lv1.png',
+      available: true,
     ),
     'passenger_worker': GameAsset(
       key: 'passenger_worker',
       path: 'assets/images/characters/passenger_worker.png',
+      available: true,
     ),
     'passenger_vip': GameAsset(
       key: 'passenger_vip',
       path: 'assets/images/characters/passenger_vip.png',
+      available: true,
     ),
     'mascot_station_cat': GameAsset(
       key: 'mascot_station_cat',
       path: 'assets/images/characters/mascot_station_cat.png',
+      available: true,
     ),
   };
 

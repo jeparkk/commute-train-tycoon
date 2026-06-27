@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../../core/assets/game_asset.dart';
 import '../models/decoration.dart';
 import '../models/game_state.dart';
 import '../models/slot_kind.dart';
@@ -55,6 +56,8 @@ class _TrainCabinState extends State<TrainCabin>
     final seat = widget.state.slots[SlotKind.seat]!;
     final kiosk = widget.state.slots[SlotKind.kiosk]!;
     final hasDecorations = widget.state.placedDecorationCount > 0;
+    final usesCabinAsset =
+        GameAssets.byKey('cabin_default')?.available ?? false;
 
     return AnimatedBuilder(
       animation: _controller,
@@ -78,28 +81,31 @@ class _TrainCabinState extends State<TrainCabin>
           child: Padding(
             padding: const EdgeInsets.all(8),
             child: AspectRatio(
-              aspectRatio: 1.18,
+              aspectRatio: 0.74,
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Stack(
                   children: [
                     const Positioned.fill(child: _CabinSceneBackground()),
-                    const Positioned(
-                      left: 18,
-                      right: 18,
-                      top: 24,
-                      child: _WindowStrip(),
-                    ),
-                    Positioned(
-                      left: 14,
-                      right: 14,
-                      bottom: 8,
-                      child: _TrackFloor(hasDecorations: hasDecorations),
-                    ),
+                    if (!usesCabinAsset)
+                      const Positioned(
+                        left: 18,
+                        right: 18,
+                        top: 24,
+                        child: _WindowStrip(),
+                      ),
+                    if (!usesCabinAsset)
+                      Positioned(
+                        left: 14,
+                        right: 14,
+                        bottom: 8,
+                        child: _TrackFloor(hasDecorations: hasDecorations),
+                      ),
                     Positioned(
                       left: 28,
                       top: 126 + bob,
                       child: _Passenger(
+                        assetKey: 'passenger_worker',
                         color: const Color(0xFFEB7D65),
                         shirt: const Color(0xFFFFD36A),
                         label: '+팁',
@@ -110,6 +116,7 @@ class _TrainCabinState extends State<TrainCabin>
                       right: 105,
                       top: 116 - bob,
                       child: _Passenger(
+                        assetKey: 'passenger_vip',
                         color: const Color(0xFF667BC6),
                         shirt: const Color(0xFF8ED5C2),
                         label: 'VIP',
@@ -143,6 +150,8 @@ class _TrainCabinState extends State<TrainCabin>
                     _DecorationSlot(
                       left: 22,
                       top: 94,
+                      width: 86,
+                      height: 66,
                       title: '창가 장식',
                       placed:
                           widget.state.decorations[DecorationSlotKind.window],
@@ -153,6 +162,8 @@ class _TrainCabinState extends State<TrainCabin>
                     _DecorationSlot(
                       right: 145,
                       top: 93,
+                      width: 86,
+                      height: 66,
                       title: '벽 장식',
                       placed: widget.state.decorations[DecorationSlotKind.wall],
                       pulse: 1 - pulse,
@@ -162,6 +173,8 @@ class _TrainCabinState extends State<TrainCabin>
                     _DecorationSlot(
                       left: 210,
                       bottom: 39,
+                      width: 82,
+                      height: 82,
                       title: '바닥 장식',
                       placed:
                           widget.state.decorations[DecorationSlotKind.floor],
@@ -235,7 +248,11 @@ class _CabinSceneBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(painter: _CabinBackgroundPainter());
+    return _GameAssetImage(
+      assetKey: 'cabin_default',
+      fit: BoxFit.cover,
+      fallback: CustomPaint(painter: _CabinBackgroundPainter()),
+    );
   }
 }
 
@@ -519,15 +536,19 @@ class _SeatObject extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final capped = level.clamp(1, 3);
+    final assetKey = GameAssets.slotLevelKey('seat', capped);
     final color = [
       const Color(0xFF4E9B8C),
       const Color(0xFF5F8DC7),
       const Color(0xFFC27B65),
     ][capped - 1];
 
-    return CustomPaint(
-      painter: _SeatPainter(color: color, level: capped),
-      child: const SizedBox.expand(),
+    return _GameAssetImage(
+      assetKey: assetKey,
+      fallback: CustomPaint(
+        painter: _SeatPainter(color: color, level: capped),
+        child: const SizedBox.expand(),
+      ),
     );
   }
 }
@@ -636,9 +657,14 @@ class _KioskObject extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _KioskPainter(level: level.clamp(1, 3)),
-      child: const SizedBox.expand(),
+    final capped = level.clamp(1, 3);
+
+    return _GameAssetImage(
+      assetKey: GameAssets.slotLevelKey('kiosk', capped),
+      fallback: CustomPaint(
+        painter: _KioskPainter(level: capped),
+        child: const SizedBox.expand(),
+      ),
     );
   }
 }
@@ -800,6 +826,8 @@ class _DecorationSlot extends StatelessWidget {
     this.right,
     this.top,
     this.bottom,
+    this.width,
+    this.height,
   });
 
   final String title;
@@ -810,19 +838,24 @@ class _DecorationSlot extends StatelessWidget {
   final double? right;
   final double? top;
   final double? bottom;
+  final double? width;
+  final double? height;
 
   @override
   Widget build(BuildContext context) {
     final item = placed == null ? null : DecorationCatalog.byId(placed!.itemId);
     final label = item == null ? '+' : 'Lv.${placed!.level}';
+    final assetKey = item == null
+        ? null
+        : GameAssets.decorationLevelKey(item.assetId, placed!.level);
 
     return Positioned(
       left: left,
       right: right,
       top: top,
       bottom: bottom,
-      width: 80,
-      height: 58,
+      width: width ?? 80,
+      height: height ?? 58,
       child: Tooltip(
         message: title,
         child: Material(
@@ -866,11 +899,24 @@ class _DecorationSlot extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Icon(
-                    item?.icon ?? Icons.add_rounded,
-                    color: item?.color ?? const Color(0xFF9B6A00),
-                    size: 26,
-                  ),
+                  if (assetKey == null)
+                    Icon(
+                      item?.icon ?? Icons.add_rounded,
+                      color: item?.color ?? const Color(0xFF9B6A00),
+                      size: 26,
+                    )
+                  else
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 14, 8, 8),
+                      child: _GameAssetImage(
+                        assetKey: assetKey,
+                        fallback: Icon(
+                          item?.icon ?? Icons.add_rounded,
+                          color: item?.color ?? const Color(0xFF9B6A00),
+                          size: 26,
+                        ),
+                      ),
+                    ),
                   Positioned(
                     right: 5,
                     bottom: 4,
@@ -895,12 +941,14 @@ class _DecorationSlot extends StatelessWidget {
 
 class _Passenger extends StatelessWidget {
   const _Passenger({
+    required this.assetKey,
     required this.color,
     required this.shirt,
     required this.label,
     required this.delay,
   });
 
+  final String assetKey;
   final Color color;
   final Color shirt;
   final String label;
@@ -943,9 +991,16 @@ class _Passenger extends StatelessWidget {
           ),
           Positioned(
             bottom: 0,
-            child: CustomPaint(
-              painter: _PassengerPainter(color: color, shirt: shirt),
-              size: const Size(38, 60),
+            child: SizedBox(
+              width: 42,
+              height: 60,
+              child: _GameAssetImage(
+                assetKey: assetKey,
+                fallback: CustomPaint(
+                  painter: _PassengerPainter(color: color, shirt: shirt),
+                  size: const Size(38, 60),
+                ),
+              ),
             ),
           ),
         ],
@@ -1015,9 +1070,13 @@ class _Mascot extends StatelessWidget {
       height: 58,
       child: Stack(
         children: [
-          CustomPaint(
-            painter: _MascotPainter(energized: energized),
-            size: const Size(54, 58),
+          Positioned.fill(
+            child: _GameAssetImage(
+              assetKey: 'mascot_station_cat',
+              fallback: CustomPaint(
+                painter: _MascotPainter(energized: energized),
+              ),
+            ),
           ),
           Positioned(
             top: 0,
@@ -1132,15 +1191,22 @@ class _LostItem extends StatelessWidget {
                   ),
                 ],
               ),
-              child: const Padding(
+              child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: 7, vertical: 5),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.inventory_2_rounded,
-                      size: 20,
-                      color: Color(0xFFD2A84F),
+                    SizedBox(
+                      width: 34,
+                      height: 28,
+                      child: _GameAssetImage(
+                        assetKey: 'lost_box_lv1',
+                        fallback: Icon(
+                          Icons.inventory_2_rounded,
+                          size: 20,
+                          color: Color(0xFFD2A84F),
+                        ),
+                      ),
                     ),
                     Text(
                       '분실물',
@@ -1340,6 +1406,33 @@ class _IncomeBubble extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _GameAssetImage extends StatelessWidget {
+  const _GameAssetImage({
+    required this.assetKey,
+    required this.fallback,
+    this.fit = BoxFit.contain,
+  });
+
+  final String assetKey;
+  final Widget fallback;
+  final BoxFit fit;
+
+  @override
+  Widget build(BuildContext context) {
+    final asset = GameAssets.byKey(assetKey);
+    if (asset == null || !asset.available) {
+      return fallback;
+    }
+
+    return Image.asset(
+      asset.path,
+      fit: fit,
+      filterQuality: FilterQuality.none,
+      errorBuilder: (context, error, stackTrace) => fallback,
     );
   }
 }

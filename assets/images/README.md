@@ -9,6 +9,7 @@ Add transparent PNG files here when replacing the current icon fallbacks.
 - `characters/`: passengers, VIP passengers, and the mascot
 - `slots/`: train upgrade objects such as `seat_lv1.png` and `kiosk_lv1.png`
 - `decorations/`: decoration shop items such as `tiny_plant_lv1.png`
+- `concepts/`: art direction mockups and target screen references
 
 ## Naming
 
@@ -30,6 +31,12 @@ For the full production pipeline, see:
 
 ```text
 docs/asset-pipeline.md
+```
+
+For the current Step 16 art/UI direction, see:
+
+```text
+docs/step16-art-ui-direction.md
 ```
 
 ## Art Direction

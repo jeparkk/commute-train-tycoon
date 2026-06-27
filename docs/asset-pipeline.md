@@ -2,6 +2,8 @@
 
 This project currently uses Flutter custom painters as temporary game art. Final art can replace those painters gradually through PNG assets registered in `lib/src/core/assets/game_asset.dart`.
 
+The current art/UI direction and main screen target mockup are documented in `docs/step16-art-ui-direction.md`.
+
 ## Style Target
 
 - Soft pixel-inspired 2D illustration
