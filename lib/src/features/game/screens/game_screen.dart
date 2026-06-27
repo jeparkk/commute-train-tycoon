@@ -20,7 +20,6 @@ import '../widgets/game_header.dart';
 import '../widgets/movement_bonus_sheet.dart';
 import '../widgets/offline_reward_sheet.dart';
 import '../widgets/shop_sheet.dart';
-import '../widgets/status_panel.dart';
 import '../widgets/train_cabin.dart';
 
 class GameScreen extends StatefulWidget {
@@ -691,17 +690,15 @@ class _GameContent extends StatelessWidget {
             child: ConstrainedBox(
               constraints: BoxConstraints(minHeight: constraints.maxHeight),
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    GameHeader(state: state),
-                    const SizedBox(height: 12),
-                    StatusPanel(
+                    GameHeader(
                       state: state,
                       onToggleFocusBoost: onToggleFocusBoost,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     TrainCabin(
                       state: state,
                       incomePulse: incomePulse,
@@ -711,7 +708,7 @@ class _GameContent extends StatelessWidget {
                       onOpenDecorations: onOpenDecorations,
                       onClaimLostItem: onClaimLostItem,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     BottomActions(
                       toast: toast,
                       onCabin: () {},

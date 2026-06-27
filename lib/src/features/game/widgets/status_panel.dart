@@ -16,19 +16,12 @@ class StatusPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.white.withValues(alpha: 0.74),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: const Color(0xFFE1D8C8)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1A3E3428),
-            blurRadius: 16,
-            offset: Offset(0, 8),
-          ),
-        ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.fromLTRB(10, 7, 8, 7),
         child: Row(
           children: [
             Expanded(
@@ -40,9 +33,13 @@ class StatusPanel extends StatelessWidget {
             Expanded(
               child: _Metric(label: '열차 매력', value: '${state.trainAppeal}'),
             ),
-            Switch(
-              value: state.focusBoostEnabled,
-              onChanged: onToggleFocusBoost,
+            Transform.scale(
+              scale: 0.82,
+              alignment: Alignment.centerRight,
+              child: Switch(
+                value: state.focusBoostEnabled,
+                onChanged: onToggleFocusBoost,
+              ),
             ),
           ],
         ),
@@ -64,14 +61,18 @@ class _Metric extends StatelessWidget {
       children: [
         Text(
           label,
-          style: Theme.of(
-            context,
-          ).textTheme.labelMedium?.copyWith(color: const Color(0xFF6C7772)),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: const Color(0xFF6C7772),
+            fontWeight: FontWeight.w800,
+          ),
         ),
-        const SizedBox(height: 2),
         Text(
           value,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w900,
             color: const Color(0xFF263B39),
           ),

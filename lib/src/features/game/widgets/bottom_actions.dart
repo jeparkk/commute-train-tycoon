@@ -49,7 +49,7 @@ class BottomActions extends StatelessWidget {
                 ),
         ),
         Container(
-          padding: const EdgeInsets.all(6),
+          padding: const EdgeInsets.all(5),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.78),
             borderRadius: BorderRadius.circular(8),
@@ -65,7 +65,7 @@ class BottomActions extends StatelessWidget {
                   onPressed: onCabin,
                 ),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 5),
               Expanded(
                 child: _NavButton(
                   icon: Icons.map_rounded,
@@ -73,7 +73,7 @@ class BottomActions extends StatelessWidget {
                   onPressed: onMove,
                 ),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 5),
               Expanded(
                 child: _NavButton(
                   icon: Icons.storefront_rounded,
@@ -111,7 +111,7 @@ class _NavButton extends StatelessWidget {
       style: FilledButton.styleFrom(
         backgroundColor: selected ? const Color(0xFFDFF2EF) : Colors.white,
         foregroundColor: const Color(0xFF26403C),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
